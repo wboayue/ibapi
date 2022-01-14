@@ -231,56 +231,31 @@ func (c *IbClient) handleErrorMessage(scanner *parser) {
 // whatToShow - TRADES, MIDPOINT, BID, ASK
 // useRth - use regular trading hours
 func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (chan Bar, error) {
+	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
+		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
+	}
+
 	if c.ServerVersion < MinServerVer_TRADING_CLASS {
 		if contract.TradingClass != "" {
 			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 		}
 	}
 
-	version := 3
-	requestId := 4
-	message := messageBuilder{}
-
-	message.addInt(REQ_REAL_TIME_BARS)
-	message.addInt(version)
-	message.addInt(requestId)
-
-	if c.ServerVersion >= MinServerVer_TRADING_CLASS {
-		message.addInt(contract.ContractId)
+	encoder := realTimeBarsEncoder{
+		serverVersion: c.ServerVersion,
+		version:       3,
+		requestId:     1,
+		contract:      contract,
+		whatToShow:    whatToShow,
+		useRth:        useRth,
 	}
 
-	message.addString(contract.Symbol)
-	message.addString(contract.SecurityType)
-	message.addString(contract.LastTradeDateOrContractMonth)
-	message.addFloat64(contract.Strike)
-	message.addString(contract.Right)
-	message.addString(contract.Multiplier)
-	message.addString(contract.Exchange)
-	message.addString(contract.PrimaryExchange)
-	message.addString(contract.Currency)
-	message.addString(contract.LocalSymbol)
-
-	if c.ServerVersion >= MinServerVer_TRADING_CLASS {
-		message.addString(contract.TradingClass)
-	}
-
-	message.addInt(5) // required bar size
-	message.addString(whatToShow)
-	message.addBool(useRth)
-
-	if c.ServerVersion >= MinServerVer_LINKING {
-		// realtime bar options
-		message.addString("")
-	}
-
-	err := c.writeMessage(&message)
+	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
 	}
 
 	// add listener of client by request id
-
-	// stream -> bars to caller
 
 	return nil, nil
 }

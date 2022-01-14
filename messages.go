@@ -1,5 +1,10 @@
 package ibapi
 
+import (
+	"fmt"
+	"strings"
+)
+
 // # field types
 // INT = 1
 // STR = 2
@@ -179,28 +184,33 @@ const StartApi = 71
 //     CANCEL_WSH_EVENT_DATA         = 103
 
 type messageBuilder struct {
+	builder strings.Builder
 }
 
 func (b *messageBuilder) addInt(i int) {
-
+	fmt.Fprintf(&b.builder, "%d\x00", i)
 }
 
 func (b *messageBuilder) addString(s string) {
-
+	fmt.Fprintf(&b.builder, "%s\x00", s)
 }
 
-func (b *messageBuilder) addFloat32(s float32) {
-
+func (b *messageBuilder) addFloat32(num float32) {
+	fmt.Fprintf(&b.builder, "%f\x00", num)
 }
 
-func (b *messageBuilder) addFloat64(s float64) {
-
+func (b *messageBuilder) addFloat64(num float64) {
+	fmt.Fprintf(&b.builder, "%f\x00", num)
 }
 
-func (b *messageBuilder) addBool(s bool) {
-
+func (b *messageBuilder) addBool(flag bool) {
+	if flag {
+		fmt.Fprintf(&b.builder, "1\x00")
+	} else {
+		fmt.Fprintf(&b.builder, "0\x00")
+	}
 }
 
-func (b *messageBuilder) Encode() []byte {
-	return nil
+func (b *messageBuilder) Encode() string {
+	return b.builder.String()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -23,18 +24,24 @@ func main() {
 
 	go client.ProcessMessages()
 
-	// ctx := context.Background()
+	ctx := context.Background()
 
-	// contract := ibapi.Contract{}
-	// bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
-	// if err != nil {
-	// 	log.Printf("error connecting: %v", err)
-	// 	return
-	// }
+	contract := ibapi.Contract{
+		LocalSymbol:  "ESH2",
+		SecurityType: "FUT",
+		Currency:     "USD",
+		Exchange:     "GLOBEX",
+	}
+
+	_, err = client.RealTimeBars(ctx, contract, "TRADES", false)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
 
 	// for bar := range bars {
 	// 	fmt.Println(bar)
 	// }
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Minute)
 }
