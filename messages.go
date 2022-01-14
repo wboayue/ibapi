@@ -7,21 +7,26 @@ package ibapi
 
 // # incoming msg id's
 // class IN:
+const EndConn = 0
+
 //     TICK_PRICE                = 1
 //     TICK_SIZE                 = 2
 //     ORDER_STATUS              = 3
-//     ERR_MSG                   = 4
+const ErrMsg = 4
+
 //     OPEN_ORDER                = 5
 //     ACCT_VALUE                = 6
 //     PORTFOLIO_VALUE           = 7
 //     ACCT_UPDATE_TIME          = 8
-//     NEXT_VALID_ID             = 9
+const NextValidId = 9
+
 //     CONTRACT_DATA             = 10
 //     EXECUTION_DATA            = 11
 //     MARKET_DEPTH              = 12
 //     MARKET_DEPTH_L2           = 13
 //     NEWS_BULLETINS            = 14
-//     MANAGED_ACCTS             = 15
+const ManagedAccounts = 15
+
 //     RECEIVE_FA                = 16
 //     HISTORICAL_DATA           = 17
 //     BOND_CONTRACT_DATA        = 18
@@ -117,7 +122,8 @@ package ibapi
 //     REQ_SCANNER_PARAMETERS        = 24
 //     CANCEL_HISTORICAL_DATA        = 25
 //     REQ_CURRENT_TIME              = 49
-//     REQ_REAL_TIME_BARS            = 50
+const REQ_REAL_TIME_BARS = 50
+
 //     CANCEL_REAL_TIME_BARS         = 51
 //     REQ_FUNDAMENTAL_DATA          = 52
 //     CANCEL_FUNDAMENTAL_DATA       = 53
@@ -171,3 +177,30 @@ const StartApi = 71
 //     CANCEL_WSH_META_DATA          = 101
 //     REQ_WSH_EVENT_DATA            = 102
 //     CANCEL_WSH_EVENT_DATA         = 103
+
+type messageBuilder struct {
+}
+
+func (b *messageBuilder) addInt(i int) {
+
+}
+
+func (b *messageBuilder) addString(s string) {
+
+}
+
+func (b *messageBuilder) addFloat32(s float32) {
+
+}
+
+func (b *messageBuilder) addFloat64(s float64) {
+
+}
+
+func (b *messageBuilder) addBool(s bool) {
+
+}
+
+func (b *messageBuilder) Encode() []byte {
+	return nil
+}
