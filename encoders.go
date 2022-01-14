@@ -47,3 +47,42 @@ func (e *realTimeBarsEncoder) encode() string {
 
 	return message.Encode()
 }
+
+type tickByTickEncoder struct {
+	serverVersion int
+	version       int
+	requestId     int
+
+	contract      Contract
+	tickType      string
+	numberOfTicks int
+	ignoreSize    bool
+}
+
+func (e *tickByTickEncoder) encode() string {
+	message := messageBuilder{}
+
+	message.addInt(REQ_TICK_BY_TICK_DATA)
+	message.addInt(e.requestId)
+
+	message.addInt(e.contract.ContractId)
+	message.addString(e.contract.Symbol)
+	message.addString(e.contract.SecurityType)
+	message.addString(e.contract.LastTradeDateOrContractMonth)
+	message.addFloat64(e.contract.Strike)
+	message.addString(e.contract.Right)
+	message.addString(e.contract.Multiplier)
+	message.addString(e.contract.Exchange)
+	message.addString(e.contract.PrimaryExchange)
+	message.addString(e.contract.Currency)
+	message.addString(e.contract.LocalSymbol)
+	message.addString(e.contract.TradingClass)
+	message.addString(e.tickType)
+
+	if e.serverVersion > MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+		message.addInt(e.numberOfTicks)
+		message.addBool(e.ignoreSize)
+	}
+
+	return message.Encode()
+}

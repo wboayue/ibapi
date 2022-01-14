@@ -259,3 +259,59 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 
 	return nil, nil
 }
+
+func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
+	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
+	}
+
+	if c.ServerVersion < MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
+	}
+
+	encoder := tickByTickEncoder{
+		serverVersion: c.ServerVersion,
+		requestId:     2,
+		contract:      contract,
+		tickType:      "AllLast",
+		numberOfTicks: 0,
+		ignoreSize:    false,
+	}
+
+	err := c.writePacket([]byte(encoder.encode()))
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error sending request for tick by tick trades")
+	}
+
+	// add listener of client by request id
+
+	return nil, nil
+}
+
+func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
+	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
+		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
+	}
+
+	if c.ServerVersion < MinServerVer_TRADING_CLASS {
+		if contract.TradingClass != "" {
+			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
+		}
+	}
+
+	encoder := realTimeBarsEncoder{
+		serverVersion: c.ServerVersion,
+		version:       3,
+		requestId:     1,
+		contract:      contract,
+	}
+
+	err := c.writePacket([]byte(encoder.encode()))
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error sending request market data message")
+	}
+
+	// add listener of client by request id
+
+	return nil, nil
+}

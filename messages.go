@@ -175,7 +175,8 @@ const StartApi = 71
 //     REQ_PNL_SINGLE                = 94
 //     CANCEL_PNL_SINGLE             = 95
 //     REQ_HISTORICAL_TICKS          = 96
-//     REQ_TICK_BY_TICK_DATA         = 97
+const REQ_TICK_BY_TICK_DATA = 97
+
 //     CANCEL_TICK_BY_TICK_DATA      = 98
 //     REQ_COMPLETED_ORDERS          = 99
 //     REQ_WSH_META_DATA             = 100

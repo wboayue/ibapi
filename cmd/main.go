@@ -27,13 +27,22 @@ func main() {
 	ctx := context.Background()
 
 	contract := ibapi.Contract{
-		LocalSymbol:  "ESH2",
+		// LocalSymbol:  "ESH2",
+		// LocalSymbol:  "CLG2",
+		LocalSymbol:  "6EF2",
 		SecurityType: "FUT",
 		Currency:     "USD",
 		Exchange:     "GLOBEX",
+		// Exchange: "NYMEX",
 	}
 
 	_, err = client.RealTimeBars(ctx, contract, "TRADES", false)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
+
+	_, err = client.TickByTickTrades(ctx, contract)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return

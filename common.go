@@ -83,4 +83,23 @@ type (
 		WAP    float64   // The bar's Weighted Average Price (only available for TRADES)
 		Count  int       // The number of trades during the bar's timespan (only available for TRADES)
 	}
+
+	Trade struct {
+		TickType          string    // tick type: "Last" or "AllLast"
+		Time              time.Time // The trade's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
+		Price             float64   // tick last price
+		Size              int       // tick last size
+		TickAttribLast    string    // tick attribs (bit 0 - past limit, bit 1 - unreported)
+		Exchange          string    // tick exchange
+		SpecialConditions string    // tick special conditions
+	}
+
+	BidAsk struct {
+		Time             time.Time // The spread's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
+		BidPrice         float64   // tick-by-tick real-time tick bid price
+		AskPrice         float64   // tick-by-tick real-time tick ask price
+		BidSize          int       // tick-by-tick real-time tick bid size
+		AskSize          int       // tick-by-tick real-time tick ask size
+		TickAttribBidAsk float64   // tick-by-tick real-time bid/ask tick attribs (bit 0 - bid past low, bit 1 - ask past high)
+	}
 )
