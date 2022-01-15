@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/wboayue/ibapi"
 )
@@ -26,32 +25,50 @@ func main() {
 
 	ctx := context.Background()
 
-	// contract := ibapi.Contract{
-	// 	// LocalSymbol:  "ESH2",
-	// 	// LocalSymbol:  "CLG2",
-	// 	LocalSymbol:  "6EF2",
-	// 	SecurityType: "FUT",
-	// 	Currency:     "USD",
-	// 	Exchange:     "GLOBEX",
-	// 	// Exchange: "NYMEX",
-	// }
+	// realTimeBars(ctx, &client)
+	contractDetails(ctx, &client)
 
-	// _, err = client.RealTimeBars(ctx, contract, "TRADES", false)
-	// if err != nil {
-	// 	log.Printf("error connecting: %v", err)
-	// 	return
-	// }
+	// time.Sleep(10 * time.Minute)
+}
 
-	// _, err = client.TickByTickTrades(ctx, contract)
-	// if err != nil {
-	// 	log.Printf("error connecting: %v", err)
-	// 	return
-	// }
+func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
+	contract := ibapi.Contract{
+		LocalSymbol:  "ESH2",
+		SecurityType: "FUT",
+		Currency:     "USD",
+		Exchange:     "GLOBEX",
+	}
 
-	// for bar := range bars {
-	// 	fmt.Println(bar)
-	// }
+	_, err := client.RealTimeBars(ctx, contract, "TRADES", false)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
+}
 
+func tickByTickTrades(ctx context.Context, client *ibapi.IbClient) {
+	contract := ibapi.Contract{
+		// LocalSymbol:  "ESH2",
+		// LocalSymbol:  "CLG2",
+		LocalSymbol:  "6EF2",
+		SecurityType: "FUT",
+		Currency:     "USD",
+		Exchange:     "GLOBEX",
+		// Exchange: "NYMEX",
+	}
+
+	bars, err := client.TickByTickTrades(ctx, contract)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
+
+	for bar := range bars {
+		fmt.Println(bar)
+	}
+}
+
+func contractDetails(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
 		Symbol:                       "ES",
 		SecurityType:                 "FUT",
@@ -59,11 +76,11 @@ func main() {
 		LastTradeDateOrContractMonth: "2022",
 	}
 
-	_, err = client.ContractDetails(ctx, contract)
+	contracts, err := client.ContractDetails(ctx, contract)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return
 	}
 
-	time.Sleep(10 * time.Minute)
+	fmt.Printf("contracts: %+v\n", contracts)
 }

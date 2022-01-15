@@ -30,6 +30,7 @@ type IbClient struct {
 	requestId            int
 	socket               net.Conn
 	optionalCapabilities string
+	channels             map[int]chan []string
 }
 
 type Message interface {
@@ -45,6 +46,8 @@ func (c *IbClient) Connect(host string, port int, clientId int) error {
 	}
 
 	c.socket = conn
+
+	c.channels = make(map[int]chan []string)
 
 	prefix := "API\x00"
 	version := fmt.Sprintf("v%d..%d", MinClientVer, MaxClientVer)
@@ -98,7 +101,7 @@ func (c *IbClient) Close() error {
 func (c *IbClient) nextRequestId() int {
 	tmp := c.requestId
 	c.requestId++
-	return tmp
+	return tmp + 9000
 }
 
 func (c *IbClient) writePacket(data []byte) error {
@@ -183,13 +186,34 @@ func (c *IbClient) ProcessMessages() {
 		case ErrMsg:
 			c.handleErrorMessage(scanner)
 		default:
-			// determine handler
-			// determine respone channel
-			// invoke handler
+			requestId := getRequestId(msgId, fields)
 
-			log.Println(fields)
+			channel, ok := c.channels[requestId]
+			if ok {
+				channel <- fields
+			} else {
+				log.Printf("no receiver found for request id %d: %v", requestId, fields)
+			}
 		}
 	}
+}
+
+func getRequestId(msgId int, fields []string) int {
+	text := ""
+
+	switch msgId {
+	case CONTRACT_DATA:
+		text = fields[1]
+	case CONTRACT_DATA_END:
+		text = fields[2]
+	}
+
+	requestId, err := strconv.Atoi(text)
+	if err != nil {
+		panic(err)
+	}
+
+	return requestId
 }
 
 type parser struct {
@@ -199,7 +223,27 @@ type parser struct {
 func (s *parser) readInt() int {
 	result := s.fields[0]
 	s.fields = s.fields[1:]
+
+	if result == "" {
+		return 0
+	}
+
 	num, err := strconv.Atoi(result)
+	if err != nil {
+		panic(err)
+	}
+	return num
+}
+
+func (s *parser) readFloat64() float64 {
+	result := s.fields[0]
+	s.fields = s.fields[1:]
+
+	if result == "" {
+		return 0
+	}
+
+	num, err := strconv.ParseFloat(result, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -327,7 +371,7 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 	return nil, nil
 }
 
-func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Contract, error) {
+func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]ContractDetails, error) {
 	if c.ServerVersion < MinServerVer_SEC_ID_TYPE {
 		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
 	}
@@ -351,12 +395,49 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 		contract:      contract,
 	}
 
+	messages := c.addChannel(encoder.requestId)
+
 	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending contract details request")
 	}
 
-	// add listener of client by request id
+	contracts := []ContractDetails{}
 
-	return nil, nil
+	for {
+		select {
+		case <-ctx.Done():
+			return contracts, nil
+		case message := <-messages:
+			if message == nil {
+				return contracts, nil
+			}
+
+			messageId, _ := strconv.Atoi(message[0])
+			if messageId == CONTRACT_DATA_END {
+				c.removeChannel(encoder.requestId)
+			} else if messageId == CONTRACT_DATA {
+				contract := decodeContractDetails(c.ServerVersion, message)
+				contracts = append(contracts, contract)
+			} else {
+				log.Printf("unexpected message: %v", message)
+			}
+		}
+	}
+}
+
+// Utility Messages
+
+func (c *IbClient) addChannel(requestId int) chan []string {
+	channel := make(chan []string)
+	c.channels[requestId] = channel
+	return channel
+}
+
+func (c *IbClient) removeChannel(requestId int) {
+	channel := c.channels[requestId]
+	if channel != nil {
+		delete(c.channels, requestId)
+		close(channel)
+	}
 }
