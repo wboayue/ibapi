@@ -27,6 +27,7 @@ type IbClient struct {
 	ManagedAccounts string
 
 	clientId             int
+	requestId            int
 	socket               net.Conn
 	optionalCapabilities string
 }
@@ -92,6 +93,12 @@ func (c *IbClient) Close() error {
 	}
 
 	return nil
+}
+
+func (c *IbClient) nextRequestId() int {
+	tmp := c.requestId
+	c.requestId++
+	return tmp
 }
 
 func (c *IbClient) writePacket(data []byte) error {
@@ -176,6 +183,10 @@ func (c *IbClient) ProcessMessages() {
 		case ErrMsg:
 			c.handleErrorMessage(scanner)
 		default:
+			// determine handler
+			// determine respone channel
+			// invoke handler
+
 			log.Println(fields)
 		}
 	}
@@ -244,7 +255,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 	encoder := realTimeBarsEncoder{
 		serverVersion: c.ServerVersion,
 		version:       3,
-		requestId:     1,
+		requestId:     c.nextRequestId(),
 		contract:      contract,
 		whatToShow:    whatToShow,
 		useRth:        useRth,
@@ -271,7 +282,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 
 	encoder := tickByTickEncoder{
 		serverVersion: c.ServerVersion,
-		requestId:     2,
+		requestId:     c.nextRequestId(),
 		contract:      contract,
 		tickType:      "AllLast",
 		numberOfTicks: 0,
@@ -302,13 +313,47 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 	encoder := realTimeBarsEncoder{
 		serverVersion: c.ServerVersion,
 		version:       3,
-		requestId:     1,
+		requestId:     c.nextRequestId(),
 		contract:      contract,
 	}
 
 	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
+	}
+
+	// add listener of client by request id
+
+	return nil, nil
+}
+
+func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Contract, error) {
+	if c.ServerVersion < MinServerVer_SEC_ID_TYPE {
+		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
+	}
+
+	if c.ServerVersion < MinServerVer_TRADING_CLASS {
+		if contract.TradingClass != "" {
+			return nil, stacktrace.NewError("server version %d does not support TradingClass field in Contract", c.ServerVersion)
+		}
+	}
+
+	if c.ServerVersion < MinServerVer_LINKING {
+		if contract.TradingClass != "" {
+			return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
+		}
+	}
+
+	encoder := contractDetailsEncoder{
+		serverVersion: c.ServerVersion,
+		version:       8,
+		requestId:     c.nextRequestId(),
+		contract:      contract,
+	}
+
+	err := c.writePacket([]byte(encoder.encode()))
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error sending contract details request")
 	}
 
 	// add listener of client by request id

@@ -86,3 +86,37 @@ func (e *tickByTickEncoder) encode() string {
 
 	return message.Encode()
 }
+
+type contractDetailsEncoder struct {
+	serverVersion int
+	version       int
+	requestId     int
+
+	contract Contract
+}
+
+func (e *contractDetailsEncoder) encode() string {
+	message := messageBuilder{}
+
+	message.addInt(REQ_CONTRACT_DATA)
+	message.addInt(e.version)
+	message.addInt(e.requestId)
+
+	message.addInt(e.contract.ContractId)
+	message.addString(e.contract.Symbol)
+	message.addString(e.contract.SecurityType)
+	message.addString(e.contract.LastTradeDateOrContractMonth)
+	message.addFloat64(e.contract.Strike)
+	message.addString(e.contract.Right)
+	message.addString(e.contract.Multiplier)
+	message.addString(e.contract.Exchange)
+	message.addString(e.contract.PrimaryExchange)
+	message.addString(e.contract.Currency)
+	message.addString(e.contract.LocalSymbol)
+	message.addString(e.contract.TradingClass)
+	message.addBool(e.contract.IncludeExpired)
+	message.addString(e.contract.SecurityIdType)
+	message.addString(e.contract.SecurityId)
+
+	return message.Encode()
+}

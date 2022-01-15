@@ -73,6 +73,10 @@ type (
 		Price      float64 // The price of the underlying. Used for Delta-Neutral Combo contracts.
 	}
 
+	ContractDetails struct {
+		Contract Contract
+	}
+
 	Bar struct {
 		Time   time.Time // The bar's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
 		Open   float64   // The bar's open price.

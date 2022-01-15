@@ -81,3 +81,20 @@ func TestTickByTickEncoder(t *testing.T) {
 		assert.Equal(t, "97\x002\x000\x00ES\x00FUT\x00201803\x000.000000\x00\x00\x00GLOBEX\x00\x00USD\x00ESU6\x00FGBL\x00BidAsk\x00", request.encode())
 	})
 }
+
+func TestContractDetailsEncoder(t *testing.T) {
+	contract := Contract{
+		Symbol:                       "ES",
+		SecurityType:                 "FUT",
+		Currency:                     "USD",
+		LastTradeDateOrContractMonth: "2021",
+	}
+
+	request := contractDetailsEncoder{
+		serverVersion: MinServerVer_LINKING,
+		requestId:     2,
+		contract:      contract,
+	}
+
+	assert.Equal(t, "9\x000\x002\x000\x00ES\x00FUT\x002021\x000.000000\x00\x00\x00\x00\x00USD\x00\x00\x000\x00\x00\x00", request.encode())
+}
