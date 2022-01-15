@@ -50,12 +50,12 @@ func decodeContractDetails(serverVersion int, fields []string) ContractDetails {
 
 	secIdListCount := scanner.readInt()
 	if secIdListCount > 0 {
-		details.SecIdList = make([]string, secIdListCount)
+		details.SecIdList = make([]TagValue, secIdListCount)
 		for i := 0; i < secIdListCount; i++ {
 			tag := scanner.readString()
 			value := scanner.readString()
 
-			details.SecIdList[i] = "" + tag + ":" + value
+			details.SecIdList[i] = TagValue{Tag: tag, Value: value}
 		}
 	}
 

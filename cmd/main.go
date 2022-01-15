@@ -25,8 +25,8 @@ func main() {
 
 	ctx := context.Background()
 
-	realTimeBars(ctx, &client)
-	// contractDetails(ctx, &client)
+	// realTimeBars(ctx, &client)
+	contractDetails(ctx, &client)
 
 }
 
@@ -85,5 +85,7 @@ func contractDetails(ctx context.Context, client *ibapi.IbClient) {
 		return
 	}
 
-	fmt.Printf("contracts: %+v\n", contracts)
+	for i, contract := range contracts {
+		fmt.Printf("%d - %+v\n", i, contract)
+	}
 }
