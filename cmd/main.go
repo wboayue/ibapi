@@ -25,10 +25,9 @@ func main() {
 
 	ctx := context.Background()
 
-	// realTimeBars(ctx, &client)
-	contractDetails(ctx, &client)
+	realTimeBars(ctx, &client)
+	// contractDetails(ctx, &client)
 
-	// time.Sleep(10 * time.Minute)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
@@ -39,10 +38,14 @@ func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 		Exchange:     "GLOBEX",
 	}
 
-	_, err := client.RealTimeBars(ctx, contract, "TRADES", false)
+	bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return
+	}
+
+	for bar := range bars {
+		fmt.Println(bar)
 	}
 }
 
