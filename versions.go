@@ -15,7 +15,7 @@ const (
 	MinServerVer_ALGO_ORDERS                = 41
 	MinServerVer_EXECUTION_DATA_CHAIN       = 42
 	MinServerVer_NOT_HELD                   = 44
-	MinServerVer_SEC_ID_TYPE                = 45
+	MinServerVersionSecurityIdType          = 45
 	MinServerVer_PLACE_ORDER_CONID          = 46
 	MinServerVer_REQ_MKT_DATA_CONID         = 47
 	MinServerVer_REQ_CALC_IMPLIED_VOLAT     = 49
@@ -34,9 +34,9 @@ const (
 	MinServerVer_DELTA_NEUTRAL_OPEN_CLOSE   = 66
 	MinServerVer_POSITIONS                  = 67
 	MinServerVer_ACCOUNT_SUMMARY            = 67
-	MinServerVer_TRADING_CLASS              = 68
+	MinServerVersionTradingClass            = 68
 	MinServerVer_SCALE_TABLE                = 69
-	MinServerVer_LINKING                    = 70
+	MinServerVersionLinking                 = 70
 	MinServerVer_ALGO_ID                    = 71
 	MinServerVerOptionalCapabilities        = 72
 	MinServerVer_ORDER_SOLICITED            = 73

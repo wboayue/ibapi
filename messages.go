@@ -25,7 +25,7 @@ const (
 	PORTFOLIO_VALUE                          = 7
 	ACCT_UPDATE_TIME                         = 8
 	NextValidId                              = 9
-	CONTRACT_DATA                            = 10
+	ContractData                             = 10
 	EXECUTION_DATA                           = 11
 	MARKET_DEPTH                             = 12
 	MARKET_DEPTH_L2                          = 13
@@ -43,7 +43,7 @@ const (
 	CURRENT_TIME                             = 49
 	REAL_TIME_BARS                           = 50
 	FUNDAMENTAL_DATA                         = 51
-	CONTRACT_DATA_END                        = 52
+	ContractDataEnd                          = 52
 	OPEN_ORDER_END                           = 53
 	ACCT_DOWNLOAD_END                        = 54
 	EXECUTION_DATA_END                       = 55

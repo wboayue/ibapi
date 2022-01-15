@@ -202,9 +202,9 @@ func getRequestId(msgId int, fields []string) int {
 	text := ""
 
 	switch msgId {
-	case CONTRACT_DATA:
+	case ContractData:
 		text = fields[1]
-	case CONTRACT_DATA_END:
+	case ContractDataEnd:
 		text = fields[2]
 	}
 
@@ -290,7 +290,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_TRADING_CLASS {
+	if c.ServerVersion < MinServerVersionTradingClass {
 		if contract.TradingClass != "" {
 			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 		}
@@ -348,7 +348,7 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_TRADING_CLASS {
+	if c.ServerVersion < MinServerVersionTradingClass {
 		if contract.TradingClass != "" {
 			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 		}
@@ -375,21 +375,19 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 // This method will provide all the contracts matching the contract provided.
 // It can also be used to retrieve complete options and futures chains.
 func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]ContractDetails, error) {
-	if c.ServerVersion < MinServerVer_SEC_ID_TYPE {
+	if c.ServerVersion < MinServerVersionSecurityIdType {
 		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_TRADING_CLASS {
-		if contract.TradingClass != "" {
-			return nil, stacktrace.NewError("server version %d does not support TradingClass field in Contract", c.ServerVersion)
-		}
+	if c.ServerVersion < MinServerVersionTradingClass {
+		return nil, stacktrace.NewError("server version %d does not support TradingClass field in Contract", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_LINKING {
-		if contract.TradingClass != "" {
-			return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
-		}
+	if c.ServerVersion < MinServerVersionLinking {
+		return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
 	}
+
+	// create and send request
 
 	encoder := contractDetailsEncoder{
 		serverVersion: c.ServerVersion,
@@ -405,21 +403,29 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 		return nil, stacktrace.Propagate(err, "error sending contract details request")
 	}
 
+	// process response
+
 	contracts := []ContractDetails{}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return contracts, nil
+			c.removeChannel(encoder.requestId)
+			return contracts, fmt.Errorf("contract details request %d cancelled", encoder.requestId)
+
 		case message := <-messages:
 			if message == nil {
 				return contracts, nil
 			}
 
-			messageId, _ := strconv.Atoi(message[0])
-			if messageId == CONTRACT_DATA_END {
+			messageId, err := strconv.Atoi(message[0])
+			if err != nil {
+				log.Printf("error parsing messageId [%s]: %v", message[0], err)
+			}
+
+			if messageId == ContractDataEnd {
 				c.removeChannel(encoder.requestId)
-			} else if messageId == CONTRACT_DATA {
+			} else if messageId == ContractData {
 				contract := decodeContractDetails(c.ServerVersion, message)
 				contracts = append(contracts, contract)
 			} else {

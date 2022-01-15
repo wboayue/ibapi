@@ -19,7 +19,7 @@ func TestRealTimeBarsEncoder(t *testing.T) {
 
 	t.Run("with trading class available", func(t *testing.T) {
 		request := realTimeBarsEncoder{
-			serverVersion: MinServerVer_TRADING_CLASS,
+			serverVersion: MinServerVersionTradingClass,
 			version:       3,
 			requestId:     1,
 			contract:      contract,
@@ -32,7 +32,7 @@ func TestRealTimeBarsEncoder(t *testing.T) {
 
 	t.Run("without trading class available", func(t *testing.T) {
 		request := realTimeBarsEncoder{
-			serverVersion: MinServerVer_TRADING_CLASS - 5,
+			serverVersion: MinServerVersionTradingClass - 5,
 			version:       3,
 			requestId:     1,
 			contract:      contract,
@@ -91,7 +91,7 @@ func TestContractDetailsEncoder(t *testing.T) {
 	}
 
 	request := contractDetailsEncoder{
-		serverVersion: MinServerVer_LINKING,
+		serverVersion: MinServerVersionLinking,
 		requestId:     2,
 		contract:      contract,
 	}

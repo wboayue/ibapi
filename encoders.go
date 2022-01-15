@@ -17,7 +17,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addInt(e.version)
 	message.addInt(e.requestId)
 
-	if e.serverVersion >= MinServerVer_TRADING_CLASS {
+	if e.serverVersion >= MinServerVersionTradingClass {
 		message.addInt(e.contract.ContractId)
 	}
 
@@ -32,7 +32,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addString(e.contract.Currency)
 	message.addString(e.contract.LocalSymbol)
 
-	if e.serverVersion >= MinServerVer_TRADING_CLASS {
+	if e.serverVersion >= MinServerVersionTradingClass {
 		message.addString(e.contract.TradingClass)
 	}
 
@@ -40,7 +40,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addString(e.whatToShow)
 	message.addBool(e.useRth)
 
-	if e.serverVersion >= MinServerVer_LINKING {
+	if e.serverVersion >= MinServerVersionLinking {
 		// realtime bar options
 		message.addString("")
 	}
