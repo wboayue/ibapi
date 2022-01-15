@@ -371,6 +371,9 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 	return nil, nil
 }
 
+// ContractDetails requests contract information.
+// This method will provide all the contracts matching the contract provided.
+// It can also be used to retrieve complete options and futures chains.
 func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]ContractDetails, error) {
 	if c.ServerVersion < MinServerVer_SEC_ID_TYPE {
 		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
@@ -426,7 +429,7 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 	}
 }
 
-// Utility Messages
+// Utility Methods
 
 func (c *IbClient) addChannel(requestId int) chan []string {
 	channel := make(chan []string)
