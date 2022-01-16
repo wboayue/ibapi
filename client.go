@@ -181,8 +181,10 @@ func getRequestId(msgId int, fields []string) int {
 	switch msgId {
 	case ContractData:
 		text = fields[1]
-	case ContractDataEnd:
+	case ContractDataEnd, RealTimeBars:
 		text = fields[2]
+	default:
+		fmt.Printf("%d: %v\n", msgId, fields)
 	}
 
 	requestId, err := strconv.Atoi(text)
@@ -278,7 +280,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 					log.Printf("error parsing messageId [%s]: %v", message[0], err)
 				}
 
-				if messageId == REAL_TIME_BARS {
+				if messageId == RealTimeBars {
 					bar := decodeRealTimeBars(c.ServerVersion, message)
 					bars <- bar
 				} else {

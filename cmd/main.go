@@ -31,8 +31,8 @@ func main() {
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		// LocalSymbol:  "ESH2",
-		LocalSymbol:  "6EF2",
+		LocalSymbol: "ESH2",
+		// LocalSymbol:  "6EF2",
 		SecurityType: "FUT",
 		Currency:     "USD",
 		Exchange:     "GLOBEX",
