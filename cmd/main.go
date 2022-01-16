@@ -25,19 +25,20 @@ func main() {
 
 	ctx := context.Background()
 
-	// realTimeBars(ctx, client)
-	contractDetails(ctx, client)
+	realTimeBars(ctx, client)
+	// contractDetails(ctx, client)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		LocalSymbol:  "ESH2",
+		// LocalSymbol:  "ESH2",
+		LocalSymbol:  "6EF2",
 		SecurityType: "FUT",
 		Currency:     "USD",
 		Exchange:     "GLOBEX",
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
