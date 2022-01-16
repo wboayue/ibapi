@@ -87,3 +87,24 @@ func (b *TcpMessageBus) ReadPacket() (string, error) {
 
 	return string(data), nil
 }
+
+// MessageBusRecorder records the MessageBus interactions
+type MessageBusRecorder struct {
+	Bus MessageBus
+}
+
+func (b *MessageBusRecorder) ReadPacket() (string, error) {
+	return b.Bus.ReadPacket()
+}
+
+func (b *MessageBusRecorder) Write(data string) error {
+	return b.Bus.Write(data)
+}
+
+func (b *MessageBusRecorder) WritePacket(packet string) error {
+	return b.Bus.WritePacket(packet)
+}
+
+func (b *MessageBusRecorder) Close() error {
+	return b.Bus.Close()
+}
