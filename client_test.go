@@ -11,7 +11,6 @@ func TestClient_Connect(t *testing.T) {
 
 	assert.Nil(t, err, "error connecting: %v", err)
 	assert.Equal(t, 10, client.ServerVersion)
-	assert.Equal(t, "", client.ConnectOptions)
 
 	client.Close()
 }

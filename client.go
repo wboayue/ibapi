@@ -17,18 +17,14 @@ const (
 )
 
 type IbClient struct {
-	ConnectOptions  string
-	ServerVersion   int
-	ServerTime      time.Time
-	NextValidId     int
-	ManagedAccounts string
-	MessageBus      MessageBus
+	ServerVersion    int        // IB server version
+	ServerTime       time.Time  // IB server time
+	NextValidOrderId int        // next valid order id
+	ManagedAccounts  string     // Ids of managed accounts
+	MessageBus       MessageBus // bus used to communicate with server
 
-	// clientId             int
-	requestId int
-	// socket               net.Conn
-	optionalCapabilities string
-	channels             map[int]chan []string
+	currentRequestId int                   // used to generate sequence of request Ids
+	channels         map[int]chan []string // message exchange
 }
 
 type MessageBus interface {
@@ -103,8 +99,8 @@ func (c *IbClient) Close() error {
 }
 
 func (c *IbClient) nextRequestId() int {
-	tmp := c.requestId
-	c.requestId++
+	tmp := c.currentRequestId
+	c.currentRequestId++
 	return tmp + 9000
 }
 
@@ -132,14 +128,10 @@ func (c *IbClient) readFirstPacket() ([]string, error) {
 	return fields, nil
 }
 
-func readFields(packet string) []string {
-	return strings.Split(string(packet[:len(packet)-1]), "\x00")
-}
-
 func (c *IbClient) startApi(clientId int) error {
 	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", StartApi, ClientVersion, clientId)
 	if c.ServerVersion > MinServerVerOptionalCapabilities {
-		msg = msg + fmt.Sprintf("%s\x00", c.optionalCapabilities)
+		msg = msg + "\x00"
 	}
 	return c.MessageBus.WritePacket(msg)
 }
@@ -203,9 +195,9 @@ func getRequestId(msgId int, fields []string) int {
 
 func (c *IbClient) handleNextValidId(scanner *parser) {
 	scanner.readInt() // version
-	c.NextValidId = scanner.readInt()
+	c.NextValidOrderId = scanner.readInt()
 
-	log.Printf("next valid id: %v", c.NextValidId)
+	log.Printf("next valid id: %v", c.NextValidOrderId)
 }
 
 func (c *IbClient) handleManagedAccounts(scanner *parser) {
