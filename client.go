@@ -2,11 +2,8 @@ package ibapi
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -25,60 +22,63 @@ type IbClient struct {
 	ServerTime      time.Time
 	NextValidId     int
 	ManagedAccounts string
+	MessageBus      MessageBus
 
-	clientId             int
-	requestId            int
-	socket               net.Conn
+	// clientId             int
+	requestId int
+	// socket               net.Conn
 	optionalCapabilities string
 	channels             map[int]chan []string
 }
 
-func NewClient() *IbClient {
-	return &IbClient{}
+type MessageBus interface {
+	ReadPacket() (string, error)
+	Write(string) error
+	WritePacket(string) error
+	Close() error
 }
 
-type Message interface {
-	Encode() []byte
-}
-
-func (c *IbClient) Connect(host string, port int, clientId int) error {
-	c.clientId = clientId
-
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		return err
+func Connect(host string, port int, clientId int) (*IbClient, error) {
+	bus := TcpMessageBus{}
+	if err := bus.Connect(host, port, clientId); err != nil {
+		return nil, err
 	}
 
-	c.socket = conn
+	client := IbClient{
+		MessageBus: &bus,
+		channels:   make(map[int]chan []string),
+	}
 
-	c.channels = make(map[int]chan []string)
+	if err := client.handshake(); err != nil {
+		return nil, err
+	}
 
+	if err := client.startApi(clientId); err != nil {
+		return nil, err
+	}
+
+	return &client, nil
+}
+
+// type Message interface {
+// 	Encode() []byte
+// }
+
+func (c *IbClient) handshake() error {
 	prefix := "API\x00"
 	version := fmt.Sprintf("v%d..%d", MinClientVer, MaxClientVer)
-	if c.ConnectOptions != "" {
-		version = version + " " + c.ConnectOptions
+
+	if err := c.MessageBus.Write(prefix); err != nil {
+		return stacktrace.Propagate(err, "error sending prefix")
 	}
 
-	_, err = c.socket.Write([]byte(prefix))
+	if err := c.MessageBus.WritePacket(version); err != nil {
+		return stacktrace.Propagate(err, "error sending version")
+	}
+
+	fields, err := c.readFirstPacket()
 	if err != nil {
-		return err
-	}
-
-	err = c.writePacket([]byte(version))
-	if err != nil {
-		return err
-	}
-
-	fields, err := c.readFields()
-	if err != nil {
-		return stacktrace.Propagate(err, "error reading fields")
-	}
-
-	if len(fields) != 2 {
-		for _, field := range fields {
-			fmt.Println("-" + field)
-		}
-		return stacktrace.NewError("expected 2 fields, got %d: %v", len(fields), fields)
+		return stacktrace.Propagate(err, "error reading first packet")
 	}
 
 	c.ServerVersion, err = strconv.Atoi(fields[0])
@@ -91,12 +91,12 @@ func (c *IbClient) Connect(host string, port int, clientId int) error {
 		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
 	}
 
-	return c.startApi()
+	return nil
 }
 
 func (c *IbClient) Close() error {
-	if c.socket != nil {
-		return c.socket.Close()
+	if c.MessageBus != nil {
+		return c.MessageBus.Close()
 	}
 
 	return nil
@@ -108,59 +108,40 @@ func (c *IbClient) nextRequestId() int {
 	return tmp + 9000
 }
 
-func (c *IbClient) writePacket(data []byte) error {
-	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
-
-	_, err := c.socket.Write(header)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.socket.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *IbClient) writeMessage(msg Message) error {
-	return c.writePacket(msg.Encode())
-}
-
-func (c *IbClient) readPacket() ([]byte, error) {
-	header := make([]byte, 4)
-	_, err := io.ReadFull(c.socket, header)
-	if err != nil {
-		return nil, err
-	}
-
-	size := binary.BigEndian.Uint32(header)
-
-	data := make([]byte, size)
-	_, err = io.ReadFull(c.socket, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
 func (c *IbClient) readFields() ([]string, error) {
-	data, err := c.readPacket()
+	data, err := c.MessageBus.ReadPacket()
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error reading packet")
 	}
 	return strings.Split(string(data[:len(data)-1]), "\x00"), nil
 }
 
-func (c *IbClient) startApi() error {
-	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", StartApi, ClientVersion, c.clientId)
+func (c *IbClient) readFirstPacket() ([]string, error) {
+	fields, err := c.readFields()
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error reading fields")
+	}
+
+	if len(fields) != 2 {
+		for _, field := range fields {
+			fmt.Println("-" + field)
+		}
+		return nil, stacktrace.NewError("expected 2 fields, got %d: %v", len(fields), fields)
+	}
+
+	return fields, nil
+}
+
+func readFields(packet string) []string {
+	return strings.Split(string(packet[:len(packet)-1]), "\x00")
+}
+
+func (c *IbClient) startApi(clientId int) error {
+	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", StartApi, ClientVersion, clientId)
 	if c.ServerVersion > MinServerVerOptionalCapabilities {
 		msg = msg + fmt.Sprintf("%s\x00", c.optionalCapabilities)
 	}
-	return c.writePacket([]byte(msg))
+	return c.MessageBus.WritePacket(msg)
 }
 
 func (c *IbClient) ProcessMessages() {
@@ -275,7 +256,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 
 	messages := c.addChannel(encoder.requestId)
 
-	err := c.writePacket([]byte(encoder.encode()))
+	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
 	}
@@ -334,7 +315,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	message.addInt(requestId)
 
 	// interface for this
-	if err := c.writePacket([]byte(message.Encode())); err != nil {
+	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
 		return stacktrace.Propagate(err, "error sending request to cancel market data")
 	}
 
@@ -362,7 +343,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 
 	// messages := c.addChannel(encoder.requestId)
 
-	err := c.writePacket([]byte(encoder.encode()))
+	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request for tick by tick trades")
 	}
@@ -422,7 +403,7 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 
 	// messages := c.addChannel(encoder.requestId)
 
-	err := c.writePacket([]byte(encoder.encode()))
+	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
 	}
@@ -486,7 +467,7 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 
 	messages := c.addChannel(encoder.requestId)
 
-	err := c.writePacket([]byte(encoder.encode()))
+	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending contract details request")
 	}

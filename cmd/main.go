@@ -10,14 +10,13 @@ import (
 )
 
 func main() {
-	client := ibapi.NewClient()
-	defer client.Close()
-
-	err := client.Connect("localhost", 4002, 100)
+	client, err := ibapi.Connect("localhost", 4002, 100)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return
 	}
+
+	defer client.Close()
 
 	fmt.Printf("server version: %v\n", client.ServerVersion)
 	fmt.Printf("server time: %v\n", client.ServerTime)
@@ -26,8 +25,8 @@ func main() {
 
 	ctx := context.Background()
 
-	realTimeBars(ctx, client)
-	// contractDetails(ctx, &client)
+	// realTimeBars(ctx, client)
+	contractDetails(ctx, client)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
