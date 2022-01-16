@@ -2,6 +2,7 @@ package ibapi
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -213,4 +214,44 @@ func (b *messageBuilder) addBool(flag bool) {
 
 func (b *messageBuilder) Encode() string {
 	return b.builder.String()
+}
+
+type parser struct {
+	fields []string
+}
+
+func (s *parser) readInt() int {
+	result := s.fields[0]
+	s.fields = s.fields[1:]
+
+	if result == "" {
+		return 0
+	}
+
+	num, err := strconv.Atoi(result)
+	if err != nil {
+		panic(err)
+	}
+	return num
+}
+
+func (s *parser) readFloat64() float64 {
+	result := s.fields[0]
+	s.fields = s.fields[1:]
+
+	if result == "" {
+		return 0
+	}
+
+	num, err := strconv.ParseFloat(result, 64)
+	if err != nil {
+		panic(err)
+	}
+	return num
+}
+
+func (s *parser) readString() string {
+	result := s.fields[0]
+	s.fields = s.fields[1:]
+	return result
 }

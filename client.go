@@ -220,46 +220,6 @@ func getRequestId(msgId int, fields []string) int {
 	return requestId
 }
 
-type parser struct {
-	fields []string
-}
-
-func (s *parser) readInt() int {
-	result := s.fields[0]
-	s.fields = s.fields[1:]
-
-	if result == "" {
-		return 0
-	}
-
-	num, err := strconv.Atoi(result)
-	if err != nil {
-		panic(err)
-	}
-	return num
-}
-
-func (s *parser) readFloat64() float64 {
-	result := s.fields[0]
-	s.fields = s.fields[1:]
-
-	if result == "" {
-		return 0
-	}
-
-	num, err := strconv.ParseFloat(result, 64)
-	if err != nil {
-		panic(err)
-	}
-	return num
-}
-
-func (s *parser) readString() string {
-	result := s.fields[0]
-	s.fields = s.fields[1:]
-	return result
-}
-
 func (c *IbClient) handleNextValidId(scanner *parser) {
 	scanner.readInt() // version
 	c.NextValidId = scanner.readInt()
@@ -358,6 +318,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 	return bars, nil
 }
 
+// cancelRealTimeBar cancels a request for real time bars.
 func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error {
 	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
 		return stacktrace.NewError("server version %d does not support real time bars cancellation", c.ServerVersion)
@@ -372,6 +333,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	message.addInt(version)
 	message.addInt(requestId)
 
+	// interface for this
 	if err := c.writePacket([]byte(message.Encode())); err != nil {
 		return stacktrace.Propagate(err, "error sending request to cancel market data")
 	}
@@ -379,6 +341,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	return nil
 }
 
+// TickByTickTrades requests tick-by-tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
 	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
@@ -438,6 +401,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 	return nil, nil
 }
 
+// TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
 	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
