@@ -1,7 +1,9 @@
 package ibapi
 
-func decodeRequestMarketData() {
+func decodeRealTimeBars(serverVersion int, fields []string) Bar {
+	bar := Bar{}
 
+	return bar
 }
 
 func decodeTickByTickBidAsk() {

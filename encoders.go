@@ -16,11 +16,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addInt(REQ_REAL_TIME_BARS)
 	message.addInt(e.version)
 	message.addInt(e.requestId)
-
-	if e.serverVersion >= MinServerVersionTradingClass {
-		message.addInt(e.contract.ContractId)
-	}
-
+	message.addInt(e.contract.ContractId)
 	message.addString(e.contract.Symbol)
 	message.addString(e.contract.SecurityType)
 	message.addString(e.contract.LastTradeDateOrContractMonth)
@@ -31,11 +27,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addString(e.contract.PrimaryExchange)
 	message.addString(e.contract.Currency)
 	message.addString(e.contract.LocalSymbol)
-
-	if e.serverVersion >= MinServerVersionTradingClass {
-		message.addString(e.contract.TradingClass)
-	}
-
+	message.addString(e.contract.TradingClass)
 	message.addInt(5) // required bar size
 	message.addString(e.whatToShow)
 	message.addBool(e.useRth)

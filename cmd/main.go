@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/wboayue/ibapi"
 )
 
 func main() {
-	client := ibapi.IbClient{}
+	client := ibapi.NewClient()
 	defer client.Close()
 
 	err := client.Connect("localhost", 4002, 100)
@@ -25,9 +26,8 @@ func main() {
 
 	ctx := context.Background()
 
-	// realTimeBars(ctx, &client)
-	contractDetails(ctx, &client)
-
+	realTimeBars(ctx, client)
+	// contractDetails(ctx, &client)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
@@ -37,6 +37,9 @@ func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 		Currency:     "USD",
 		Exchange:     "GLOBEX",
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 
 	bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
 	if err != nil {

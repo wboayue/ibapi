@@ -33,6 +33,10 @@ type IbClient struct {
 	channels             map[int]chan []string
 }
 
+func NewClient() *IbClient {
+	return &IbClient{}
+}
+
 type Message interface {
 	Encode() []byte
 }
@@ -283,17 +287,21 @@ func (c *IbClient) handleErrorMessage(scanner *parser) {
 	}
 }
 
-// whatToShow - TRADES, MIDPOINT, BID, ASK
-// useRth - use regular trading hours
-func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (chan Bar, error) {
+// RealTimeBars requests real time bars.
+// Currently, only 5 seconds bars are provided. This request is subject to the same pacing as any historical data request: no more than 60 API queries in more than 600 seconds.
+// Real time bars subscriptions are also included in the calculation of the number of Level 1 market data subscriptions allowed in an account.
+//
+// Parameters:
+// 	contract 	- the Contract for which the depth is being requested
+// 	whatToShow 	- TRADES, MIDPOINT, BID, ASK
+// 	useRth 		- use regular trading hours
+func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (<-chan Bar, error) {
 	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
 	if c.ServerVersion < MinServerVersionTradingClass {
-		if contract.TradingClass != "" {
-			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
-		}
+		return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 	}
 
 	encoder := realTimeBarsEncoder{
@@ -305,14 +313,70 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 		useRth:        useRth,
 	}
 
+	messages := c.addChannel(encoder.requestId)
+
 	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
 	}
 
-	// add listener of client by request id
+	// process response
 
-	return nil, nil
+	bars := make(chan Bar)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				c.cancelRealTimeBars(ctx, encoder.requestId)
+				time.Sleep(200 * time.Millisecond)
+				c.removeChannel(encoder.requestId)
+				close(bars)
+				return
+
+			case message := <-messages:
+				if message == nil {
+					close(bars)
+					return
+				}
+
+				messageId, err := strconv.Atoi(message[0])
+				if err != nil {
+					log.Printf("error parsing messageId [%s]: %v", message[0], err)
+				}
+
+				if messageId == REAL_TIME_BARS {
+					bar := decodeRealTimeBars(c.ServerVersion, message)
+					bars <- bar
+				} else {
+					log.Printf("unexpected message: %v", message)
+				}
+			}
+		}
+	}()
+
+	return bars, nil
+}
+
+func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error {
+	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
+		return stacktrace.NewError("server version %d does not support real time bars cancellation", c.ServerVersion)
+	}
+
+	log.Printf("canceling real time bar request %v.", requestId)
+
+	message := messageBuilder{}
+
+	version := 1
+	message.addInt(CANCEL_REAL_TIME_BARS)
+	message.addInt(version)
+	message.addInt(requestId)
+
+	if err := c.writePacket([]byte(message.Encode())); err != nil {
+		return stacktrace.Propagate(err, "error sending request to cancel market data")
+	}
+
+	return nil
 }
 
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
@@ -333,12 +397,43 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 		ignoreSize:    false,
 	}
 
+	// messages := c.addChannel(encoder.requestId)
+
 	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request for tick by tick trades")
 	}
 
 	// add listener of client by request id
+
+	// process response
+
+	// for {
+	// 	select {
+	// 	case <-ctx.Done():
+	// 		c.removeChannel(encoder.requestId)
+	// 		return contracts, fmt.Errorf("contract details request %d cancelled", encoder.requestId)
+
+	// 	case message := <-messages:
+	// 		if message == nil {
+	// 			return contracts, nil
+	// 		}
+
+	// 		messageId, err := strconv.Atoi(message[0])
+	// 		if err != nil {
+	// 			log.Printf("error parsing messageId [%s]: %v", message[0], err)
+	// 		}
+
+	// 		if messageId == ContractDataEnd {
+	// 			c.removeChannel(encoder.requestId)
+	// 		} else if messageId == ContractData {
+	// 			contract := decodeContractDetails(c.ServerVersion, message)
+	// 			contracts = append(contracts, contract)
+	// 		} else {
+	// 			log.Printf("unexpected message: %v", message)
+	// 		}
+	// 	}
+	// }
 
 	return nil, nil
 }
@@ -361,12 +456,41 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 		contract:      contract,
 	}
 
+	// messages := c.addChannel(encoder.requestId)
+
 	err := c.writePacket([]byte(encoder.encode()))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request market data message")
 	}
 
-	// add listener of client by request id
+	// // process response
+
+	// for {
+	// 	select {
+	// 	case <-ctx.Done():
+	// 		c.removeChannel(encoder.requestId)
+	// 		return contracts, fmt.Errorf("contract details request %d cancelled", encoder.requestId)
+
+	// 	case message := <-messages:
+	// 		if message == nil {
+	// 			return contracts, nil
+	// 		}
+
+	// 		messageId, err := strconv.Atoi(message[0])
+	// 		if err != nil {
+	// 			log.Printf("error parsing messageId [%s]: %v", message[0], err)
+	// 		}
+
+	// 		if messageId == ContractDataEnd {
+	// 			c.removeChannel(encoder.requestId)
+	// 		} else if messageId == ContractData {
+	// 			contract := decodeContractDetails(c.ServerVersion, message)
+	// 			contracts = append(contracts, contract)
+	// 		} else {
+	// 			log.Printf("unexpected message: %v", message)
+	// 		}
+	// 	}
+	// }
 
 	return nil, nil
 }
