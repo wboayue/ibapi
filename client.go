@@ -231,7 +231,7 @@ func (c *IbClient) handleErrorMessage(scanner *parser) {
 // 	whatToShow 	- TRADES, MIDPOINT, BID, ASK
 // 	useRth 		- use regular trading hours
 func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (<-chan Bar, error) {
-	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
+	if c.ServerVersion < MinServerVersionRealTimeBars {
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
@@ -295,7 +295,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 
 // cancelRealTimeBar cancels a request for real time bars.
 func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error {
-	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
+	if c.ServerVersion < MinServerVersionRealTimeBars {
 		return stacktrace.NewError("server version %d does not support real time bars cancellation", c.ServerVersion)
 	}
 
@@ -304,7 +304,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	message := messageBuilder{}
 
 	version := 1
-	message.addInt(CANCEL_REAL_TIME_BARS)
+	message.addInt(CancelRealTimeBars)
 	message.addInt(version)
 	message.addInt(requestId)
 

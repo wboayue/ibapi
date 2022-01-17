@@ -1,7 +1,7 @@
 package ibapi
 
 const (
-	MinServerVer_REAL_TIME_BARS             = 34
+	MinServerVersionRealTimeBars            = 34
 	MinServerVer_SCALE_ORDERS               = 35
 	MinServerVer_SNAPSHOT_MKT_DATA          = 35
 	MinServerVer_SSHORT_COMBO_LEGS          = 35

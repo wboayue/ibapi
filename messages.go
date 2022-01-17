@@ -130,7 +130,7 @@ const (
 	CANCEL_HISTORICAL_DATA        = 25
 	REQ_CURRENT_TIME              = 49
 	REQ_REAL_TIME_BARS            = 50
-	CANCEL_REAL_TIME_BARS         = 51
+	CancelRealTimeBars            = 51
 	REQ_FUNDAMENTAL_DATA          = 52
 	CANCEL_FUNDAMENTAL_DATA       = 53
 	REQ_CALC_IMPLIED_VOLAT        = 54

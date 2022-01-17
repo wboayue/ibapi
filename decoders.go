@@ -1,10 +1,13 @@
 package ibapi
 
+// Decoders convert raw messages into a structured responses
+
 import (
 	"log"
 	"time"
 )
 
+// decodeRealTimeBars converts a RealTimeBars incoming message into a Bar
 func decodeRealTimeBars(serverVersion int, fields []string) Bar {
 	scanner := &parser{fields[3:]}
 
