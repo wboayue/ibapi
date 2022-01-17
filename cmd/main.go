@@ -26,9 +26,9 @@ func main() {
 	ctx := context.Background()
 
 	// realTimeBars(ctx, client)
-	// contractDetails(ctx, client)
+	contractDetails(ctx, client)
 	//	tickByTickTrades(ctx, client)
-	tickByTickSpreads(ctx, client)
+	// tickByTickSpreads(ctx, client)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {

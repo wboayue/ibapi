@@ -12,12 +12,12 @@ func decodeRealTimeBars(serverVersion int, fields []string) Bar {
 	scanner := &parser{fields[3:]}
 
 	return Bar{
-		Time:   time.Unix(int64(scanner.readInt()), 0),
+		Time:   time.Unix(scanner.readInt64(), 0),
 		Open:   scanner.readFloat64(),
 		High:   scanner.readFloat64(),
 		Low:    scanner.readFloat64(),
 		Close:  scanner.readFloat64(),
-		Volume: int64(scanner.readInt()),
+		Volume: scanner.readInt64(),
 		WAP:    scanner.readFloat64(),
 		Count:  scanner.readInt(),
 	}
@@ -84,9 +84,7 @@ func decodeTickByTickTrade(serverVersion int, fields []string) Trade {
 func decodeContractDetails(serverVersion int, fields []string) ContractDetails {
 	details := ContractDetails{}
 
-	scanner := &parser{fields[1:]}
-
-	_ = scanner.readInt()
+	scanner := &parser{fields[2:]}
 
 	details.Contract.Symbol = scanner.readString()
 	details.Contract.SecurityType = scanner.readString()
