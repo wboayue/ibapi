@@ -25,8 +25,9 @@ func main() {
 
 	ctx := context.Background()
 
-	realTimeBars(ctx, client)
+	// realTimeBars(ctx, client)
 	// contractDetails(ctx, client)
+	tickByTickTrades(ctx, client)
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
@@ -54,23 +55,22 @@ func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 
 func tickByTickTrades(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		// LocalSymbol:  "ESH2",
+		LocalSymbol: "ESH2",
 		// LocalSymbol:  "CLG2",
-		LocalSymbol:  "6EF2",
 		SecurityType: "FUT",
 		Currency:     "USD",
 		Exchange:     "GLOBEX",
 		// Exchange: "NYMEX",
 	}
 
-	bars, err := client.TickByTickTrades(ctx, contract)
+	trades, err := client.TickByTickTrades(ctx, contract)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return
 	}
 
-	for bar := range bars {
-		fmt.Println(bar)
+	for trade := range trades {
+		fmt.Printf("trade: %+v\n", trade)
 	}
 }
 

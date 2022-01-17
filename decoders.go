@@ -1,6 +1,7 @@
 package ibapi
 
 import (
+	"log"
 	"time"
 )
 
@@ -23,8 +24,36 @@ func decodeTickByTickBidAsk() {
 
 }
 
-func decodeTickByTickBidAllLast() {
+func decodeTickByTickTrade(serverVersion int, fields []string) Trade {
+	scanner := &parser{fields[2:]}
 
+	tickType := scanner.readInt()
+	timestamp := scanner.readInt64()
+
+	if tickType != 2 {
+		log.Printf("expected tick type 2, got: %v", tickType)
+		return Trade{}
+	}
+
+	price := scanner.readFloat64()
+	size := scanner.readInt64()
+	mask := scanner.readInt()
+	attribute := TradeAttribute{
+		PastLimit:  mask&0x1 == 0x1,
+		Unreported: mask&0x2 == 0x2,
+	}
+	exchange := scanner.readString()
+	specialConditions := scanner.readString()
+
+	return Trade{
+		TickType:          "Last",
+		Time:              time.Unix(timestamp, 0),
+		Price:             price,
+		Size:              size,
+		TradeAttribute:    attribute,
+		Exchange:          exchange,
+		SpecialConditions: specialConditions,
+	}
 }
 
 func decodeContractDetails(serverVersion int, fields []string) ContractDetails {

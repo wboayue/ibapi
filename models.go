@@ -137,13 +137,18 @@ type (
 	}
 
 	Trade struct {
-		TickType          string    // tick type: "Last" or "AllLast"
-		Time              time.Time // The trade's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
-		Price             float64   // tick last price
-		Size              int       // tick last size
-		TickAttribLast    string    // tick attribs (bit 0 - past limit, bit 1 - unreported)
-		Exchange          string    // tick exchange
-		SpecialConditions string    // tick special conditions
+		TickType          string         // tick type: "Last" or "AllLast"
+		Time              time.Time      // The trade's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
+		Price             float64        // tick last price
+		Size              int64          // tick last size
+		TradeAttribute    TradeAttribute // tick attribs (bit 0 - past limit, bit 1 - unreported)
+		Exchange          string         // tick exchange
+		SpecialConditions string         // tick special conditions
+	}
+
+	TradeAttribute struct {
+		PastLimit  bool
+		Unreported bool
 	}
 
 	BidAsk struct {

@@ -90,7 +90,7 @@ const (
 	HISTORICAL_TICKS                         = 96
 	HISTORICAL_TICKS_BID_ASK                 = 97
 	HISTORICAL_TICKS_LAST                    = 98
-	TICK_BY_TICK                             = 99
+	TickByTick                               = 99
 	ORDER_BOUND                              = 100
 	COMPLETED_ORDER                          = 101
 	COMPLETED_ORDERS_END                     = 102
@@ -233,6 +233,10 @@ func (s *parser) readInt() int {
 		panic(err)
 	}
 	return num
+}
+
+func (s *parser) readInt64() int64 {
+	return int64(s.readInt())
 }
 
 func (s *parser) readFloat64() float64 {

@@ -179,12 +179,12 @@ func getRequestId(msgId int, fields []string) int {
 	text := ""
 
 	switch msgId {
-	case ContractData:
+	case ContractData, TickByTick:
 		text = fields[1]
 	case ContractDataEnd, RealTimeBars:
 		text = fields[2]
 	default:
-		fmt.Printf("%d: %v\n", msgId, fields)
+		log.Fatalf("could not determine request id for message ID %d: %v\n", msgId, fields)
 	}
 
 	requestId, err := strconv.Atoi(text)
@@ -316,7 +316,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	return nil
 }
 
-// TickByTickTrades requests tick-by-tick trades.
+// TickByTickTrades requests tick by tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
 	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
@@ -335,45 +335,49 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 		ignoreSize:    false,
 	}
 
-	// messages := c.addChannel(encoder.requestId)
+	messages := c.addChannel(encoder.requestId)
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "error sending request for tick by tick trades")
 	}
 
-	// add listener of client by request id
-
 	// process response
 
-	// for {
-	// 	select {
-	// 	case <-ctx.Done():
-	// 		c.removeChannel(encoder.requestId)
-	// 		return contracts, fmt.Errorf("contract details request %d cancelled", encoder.requestId)
+	trades := make(chan Trade)
 
-	// 	case message := <-messages:
-	// 		if message == nil {
-	// 			return contracts, nil
-	// 		}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				c.cancelRealTimeBars(ctx, encoder.requestId) // TODO cancel tick by tick
+				time.Sleep(200 * time.Millisecond)
+				c.removeChannel(encoder.requestId)
+				close(trades)
+				return
 
-	// 		messageId, err := strconv.Atoi(message[0])
-	// 		if err != nil {
-	// 			log.Printf("error parsing messageId [%s]: %v", message[0], err)
-	// 		}
+			case message := <-messages:
+				if message == nil {
+					close(trades)
+					return
+				}
 
-	// 		if messageId == ContractDataEnd {
-	// 			c.removeChannel(encoder.requestId)
-	// 		} else if messageId == ContractData {
-	// 			contract := decodeContractDetails(c.ServerVersion, message)
-	// 			contracts = append(contracts, contract)
-	// 		} else {
-	// 			log.Printf("unexpected message: %v", message)
-	// 		}
-	// 	}
-	// }
+				messageId, err := strconv.Atoi(message[0])
+				if err != nil {
+					log.Printf("error parsing messageId [%s]: %v", message[0], err)
+				}
 
-	return nil, nil
+				if messageId == TickByTick {
+					trade := decodeTickByTickTrade(c.ServerVersion, message)
+					trades <- trade
+				} else {
+					log.Printf("unexpected message: %v", message)
+				}
+			}
+		}
+	}()
+
+	return trades, nil
 }
 
 // TickByTickBidAsk requests tick-by-tick bid/ask.
