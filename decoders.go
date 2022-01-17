@@ -20,8 +20,30 @@ func decodeRealTimeBars(serverVersion int, fields []string) Bar {
 	}
 }
 
-func decodeTickByTickBidAsk() {
+func decodeTickByTickBidAsk(serverVersion int, fields []string) BidAsk {
+	scanner := &parser{fields[3:]}
 
+	timestamp := scanner.readInt64()
+
+	bidPrice := scanner.readFloat64()
+	askPrice := scanner.readFloat64()
+	bidSize := scanner.readInt64()
+	askSize := scanner.readInt64()
+
+	mask := scanner.readInt()
+	attribute := BidAskAttribute{
+		BidPastLow:  mask&0x1 == 0x1,
+		AskPastHigh: mask&0x2 == 0x2,
+	}
+
+	return BidAsk{
+		Time:            time.Unix(timestamp, 0),
+		BidPrice:        bidPrice,
+		AskPrice:        askPrice,
+		BidSize:         bidSize,
+		AskSize:         askSize,
+		BidAskAttribute: attribute,
+	}
 }
 
 func decodeTickByTickTrade(serverVersion int, fields []string) Trade {

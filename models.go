@@ -152,11 +152,16 @@ type (
 	}
 
 	BidAsk struct {
-		Time             time.Time // The spread's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
-		BidPrice         float64   // tick-by-tick real-time tick bid price
-		AskPrice         float64   // tick-by-tick real-time tick ask price
-		BidSize          int       // tick-by-tick real-time tick bid size
-		AskSize          int       // tick-by-tick real-time tick ask size
-		TickAttribBidAsk float64   // tick-by-tick real-time bid/ask tick attribs (bit 0 - bid past low, bit 1 - ask past high)
+		Time            time.Time       // The spread's date and time (either as a yyyymmss hh:mm:ss formatted string or as system time according to the request). Time zone is the TWS time zone chosen on login.
+		BidPrice        float64         // tick-by-tick real-time tick bid price
+		AskPrice        float64         // tick-by-tick real-time tick ask price
+		BidSize         int64           // tick-by-tick real-time tick bid size
+		AskSize         int64           // tick-by-tick real-time tick ask size
+		BidAskAttribute BidAskAttribute // tick-by-tick real-time bid/ask tick attribs (bit 0 - bid past low, bit 1 - ask past high)
+	}
+
+	BidAskAttribute struct {
+		BidPastLow  bool
+		AskPastHigh bool
 	}
 )

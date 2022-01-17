@@ -350,7 +350,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 		for {
 			select {
 			case <-ctx.Done():
-				c.cancelRealTimeBars(ctx, encoder.requestId) // TODO cancel tick by tick
+				c.cancelTickByTickData(ctx, encoder.requestId)
 				time.Sleep(200 * time.Millisecond)
 				c.removeChannel(encoder.requestId)
 				close(trades)
@@ -380,62 +380,88 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 	return trades, nil
 }
 
+// cancelTickByTickData cancels a request for tick by tick data.
+func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) error {
+	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+		return stacktrace.NewError("server version %d does not support tick by tick cancellation", c.ServerVersion)
+	}
+
+	log.Printf("canceling tick by tick data request %v.", requestId)
+
+	message := messageBuilder{}
+
+	message.addInt(CANCEL_TICK_BY_TICK_DATA)
+	message.addInt(requestId)
+
+	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
+		return stacktrace.Propagate(err, "error sending request to cancel tick by tick data")
+	}
+
+	return nil
+}
+
 // TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
-	if c.ServerVersion < MinServerVer_REAL_TIME_BARS {
-		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
+	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVersionTradingClass {
-		if contract.TradingClass != "" {
-			return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
-		}
+	if c.ServerVersion < MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
 	}
 
-	encoder := realTimeBarsEncoder{
+	encoder := tickByTickEncoder{
 		serverVersion: c.ServerVersion,
-		version:       3,
 		requestId:     c.nextRequestId(),
 		contract:      contract,
+		tickType:      "BidAsk",
+		numberOfTicks: 0,
+		ignoreSize:    false,
 	}
 
-	// messages := c.addChannel(encoder.requestId)
+	messages := c.addChannel(encoder.requestId)
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error sending request market data message")
+		return nil, stacktrace.Propagate(err, "error sending request for tick by tick bid/ask")
 	}
 
-	// // process response
+	// process response
 
-	// for {
-	// 	select {
-	// 	case <-ctx.Done():
-	// 		c.removeChannel(encoder.requestId)
-	// 		return contracts, fmt.Errorf("contract details request %d cancelled", encoder.requestId)
+	spreads := make(chan BidAsk)
 
-	// 	case message := <-messages:
-	// 		if message == nil {
-	// 			return contracts, nil
-	// 		}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				c.cancelTickByTickData(ctx, encoder.requestId)
+				time.Sleep(200 * time.Millisecond)
+				c.removeChannel(encoder.requestId)
+				close(spreads)
+				return
 
-	// 		messageId, err := strconv.Atoi(message[0])
-	// 		if err != nil {
-	// 			log.Printf("error parsing messageId [%s]: %v", message[0], err)
-	// 		}
+			case message := <-messages:
+				if message == nil {
+					close(spreads)
+					return
+				}
 
-	// 		if messageId == ContractDataEnd {
-	// 			c.removeChannel(encoder.requestId)
-	// 		} else if messageId == ContractData {
-	// 			contract := decodeContractDetails(c.ServerVersion, message)
-	// 			contracts = append(contracts, contract)
-	// 		} else {
-	// 			log.Printf("unexpected message: %v", message)
-	// 		}
-	// 	}
-	// }
+				messageId, err := strconv.Atoi(message[0])
+				if err != nil {
+					log.Printf("error parsing messageId [%s]: %v", message[0], err)
+				}
 
-	return nil, nil
+				if messageId == TickByTick {
+					spread := decodeTickByTickBidAsk(c.ServerVersion, message)
+					spreads <- spread
+				} else {
+					log.Printf("unexpected message: %v", message)
+				}
+			}
+		}
+	}()
+
+	return spreads, nil
 }
 
 // ContractDetails requests contract information.
