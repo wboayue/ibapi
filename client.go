@@ -281,7 +281,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 				}
 
 				if messageId == RealTimeBars {
-					bar := decodeRealTimeBars(c.ServerVersion, message)
+					bar := decodeRealTimeBars(message)
 					bars <- bar
 				} else {
 					log.Printf("unexpected message: %v", message)

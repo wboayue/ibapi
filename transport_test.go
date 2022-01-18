@@ -7,6 +7,8 @@ import (
 )
 
 func TestTcpMessageBus_Connect(t *testing.T) {
+	t.Skip("Skip")
+
 	bus := TcpMessageBus{}
 
 	host := "localhost"
@@ -22,5 +24,3 @@ func TestTcpMessageBus_Connect(t *testing.T) {
 
 	bus.Close()
 }
-
-// type TcpMessageBus struct {

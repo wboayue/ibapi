@@ -3,13 +3,16 @@ package ibapi
 // Decoders convert raw messages into a structured responses
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
 
 // decodeRealTimeBars converts a RealTimeBars incoming message into a Bar
-func decodeRealTimeBars(serverVersion int, fields []string) Bar {
+func decodeRealTimeBars(fields []string) Bar {
 	scanner := &parser{fields[3:]}
+
+	fmt.Printf("realtime packet: %v\n", fields)
 
 	return Bar{
 		Time:   time.Unix(scanner.readInt64(), 0),
