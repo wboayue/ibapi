@@ -18,44 +18,43 @@ go get -u github.com/wboayue/ibapi
 Connect to gateway
 
 ```go
-    port := 4002
-    clientId := 100
-	client, err := ibapi.Connect("localhost", port, client)
-	if err != nil {
-		log.Printf("error connecting: %v", err)
-		return
-	}
+port := 4002
+clientId := 100
+client, err := ibapi.Connect("localhost", port, client)
+if err != nil {
+    log.Printf("error connecting: %v", err)
+    return
+}
 
-	defer client.Close()
+defer client.Close()
 
-	fmt.Printf("server version: %v\n", client.ServerVersion)
-	fmt.Printf("server time: %v\n", client.ServerTime)
-
+fmt.Printf("server version: %v\n", client.ServerVersion)
+fmt.Printf("server time: %v\n", client.ServerTime)
 ```
 
 Request real time bars
 
 ```go
-	contract := ibapi.Contract{
-		LocalSymbol: "ESH2",
-		SecurityType: "FUT",
-		Currency:     "USD",
-		Exchange:     "GLOBEX",
-	}
+contract := ibapi.Contract{
+    LocalSymbol: "ESH2",
+    SecurityType: "FUT",
+    Currency:     "USD",
+    Exchange:     "GLOBEX",
+}
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second) // stop streaming after 60 seconds
-	defer cancel()
+ctx := context.Background()
+ctx, cancel := context.WithTimeout(ctx, 60*time.Second) // stop streaming after 60 seconds
+defer cancel()
 
-	bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
-	if err != nil {
-		log.Printf("error connecting: %v", err)
-		return
-	}
+bars, err := client.RealTimeBars(ctx, contract, "TRADES", false)
+if err != nil {
+    log.Printf("error connecting: %v", err)
+    return
+}
 
-	for bar := range bars {
-		fmt.Println(bar)
-	}
+for bar := range bars {
+    fmt.Println(bar)
+}
 ```
 
 # Reference
