@@ -25,9 +25,9 @@ func main() {
 
 	ctx := context.Background()
 
-	realTimeBars(ctx, client)
+	// realTimeBars(ctx, client)
 	// contractDetails(ctx, client)
-	//	tickByTickTrades(ctx, client)
+	tickByTickTrades(ctx, client)
 	// tickByTickSpreads(ctx, client)
 }
 
@@ -56,12 +56,14 @@ func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 
 func tickByTickTrades(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		LocalSymbol: "ESH2",
-		// LocalSymbol:  "CLG2",
+		// LocalSymbol: "ESH2",
+		// Exchange:     "GLOBEX",
 		SecurityType: "FUT",
 		Currency:     "USD",
-		Exchange:     "GLOBEX",
+		// Exchange:     "GLOBEX",
 		// Exchange: "NYMEX",
+		LocalSymbol: "NMH2",
+		Exchange:    "GLOBEX",
 	}
 
 	trades, err := client.TickByTickTrades(ctx, contract)

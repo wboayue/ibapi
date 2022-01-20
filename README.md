@@ -1,9 +1,12 @@
 # Interactive Brokers API - Go
 
-This is a partial, unofficial and idomatic Go implementation of the Interactive Brokers API.
-This implementation focuses on parts of the API used by my application. The focus is currently realtime market data. Roadmap is to implement APIs to support order execution and account management next.
+This is a partial implementation of the Interactive Brokers API in Go. This implemention does not provide a one to one match of the official Interactive Brokers API, it attempts to provide an idiomatic Go API to the TWS functionality.
 
-The official API has some required complexity because it needs to support old version of the IB Gateway. This implementation make some simplifications and was implemented and test only against the latest version of the IB Gateway.
+This implementation is a work in progress and focuses on parts of the API used by my application. The initial set of APIs implemented are around realtime market data. Next in line are APIs to support order execution and account management.
+
+This implementation uses the [TWS API 10.12](https://interactivebrokers.github.io/#) source as a reference.
+
+The official API has some required complexity to be backwards compatible with older versions of the IB Gateway. To simplify things the API was implemented and test only against IB Gateway 10.12.
 
 # Installation
 
