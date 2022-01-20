@@ -2,6 +2,8 @@
 
 [![test](https://github.com/wboayue/ibapi/workflows/ci/badge.svg)](https://github.com/wboayue/ibapi/actions/workflows/ci.yml)
 
+[![Coverage](https://img.shields.io/codecov/c/github/wboayue/ibapi?color=%2334D058)](https://codecov.io/gh/wboayue/ibapi)
+
 This is a partial implementation of the Interactive Brokers API in Go. This implemention does not provide a one to one match of the official Interactive Brokers API, it attempts to provide an idiomatic Go API to the TWS functionality.
 
 This implementation is a work in progress and focuses on parts of the API used by my application. The initial set of APIs implemented are around realtime market data. Next in line are APIs to support order execution and account management.
