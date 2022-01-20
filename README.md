@@ -1,7 +1,7 @@
 # Interactive Brokers API - Go
 
 [![test](https://github.com/wboayue/ibapi/workflows/ci/badge.svg)](https://github.com/wboayue/ibapi/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/wboayue/ibapi?color=%2334D058)](https://codecov.io/gh/wboayue/ibapi)
+[![codecov](https://codecov.io/gh/wboayue/ibapi/branch/main/graph/badge.svg)](https://codecov.io/gh/wboayue/ibapi)
 
 This is a partial implementation of the Interactive Brokers API in Go. This implemention does not provide a one to one match of the official Interactive Brokers API, it attempts to provide an idiomatic Go API to the TWS functionality.
 
