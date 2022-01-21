@@ -11,7 +11,7 @@ import (
 func TestDecodeRealTimeBars(t *testing.T) {
 	// Assemble
 
-	messageId := RealTimeBars
+	messageId := realTimeBars
 	version := 3
 	requestId := 9000
 	timestamp := int64(1642465785)

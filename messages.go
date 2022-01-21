@@ -6,102 +6,93 @@ import (
 	"strings"
 )
 
-// # field types
+// Codes for incoming messages.
 const (
-	INT = 1
-	STR = 2
-	FLT = 3
+	endConn                              = 0
+	tickPrice                            = 1
+	tickSize                             = 2
+	orderStatus                          = 3
+	errMsg                               = 4
+	openOrder                            = 5
+	accountValue                         = 6
+	portfolioValue                       = 7
+	accountUpdateTime                    = 8
+	nextValidId                          = 9
+	contractData                         = 10
+	executionData                        = 11
+	marketDepth                          = 12
+	marketDepthL2                        = 13
+	newsBulletins                        = 14
+	managedAccounts                      = 15
+	receiveFa                            = 16
+	historicalData                       = 17
+	bondContractData                     = 18
+	scannerParameters                    = 19
+	scannerData                          = 20
+	tickOptionComputation                = 21
+	tickGeneric                          = 45
+	tickString                           = 46
+	tickEfp                              = 47
+	currentTime                          = 49
+	realTimeBars                         = 50
+	fundamentalData                      = 51
+	contractDataEnd                      = 52
+	openOrderEnd                         = 53
+	accountDownloadEnd                   = 54
+	executionDataEnd                     = 55
+	deltaNeutralValidation               = 56
+	tickSnapshotEnd                      = 57
+	marketDataType                       = 58
+	commissionReport                     = 59
+	positionData                         = 61
+	positionEnd                          = 62
+	accountSummary                       = 63
+	accountSummaryEnd                    = 64
+	verifyMessageApi                     = 65
+	verifyCompleted                      = 66
+	displayGroupList                     = 67
+	displayGroupUpdated                  = 68
+	verifyAndAuthMessageApi              = 69
+	verifyAndAuthCompleted               = 70
+	positionMulti                        = 71
+	positionMultiEnd                     = 72
+	accountUpdateMulti                   = 73
+	accountUpdateMultiEnd                = 74
+	securityDefinitionOptionParameter    = 75
+	securityDefinitionOptionParameterEnd = 76
+	softDollarTiers                      = 77
+	familyCode                           = 78
+	symbolSample                         = 79
+	marketDepthExchanges                 = 80
+	tickRequestParameters                = 81
+	smartComponents                      = 82
+	newsArticls                          = 83
+	tickNews                             = 84
+	newsProviders                        = 85
+	historicalNews                       = 86
+	historicalNewsEnd                    = 87
+	headTimestamp                        = 88
+	histogramData                        = 89
+	historicalDataUpdate                 = 90
+	rerouteMarketDataRequest             = 91
+	rerouteMarketDepthRequest            = 92
+	markeRule                            = 93
+	pnl                                  = 94
+	pnlSingle                            = 95
+	historicalTicks                      = 96
+	historicalTicksBidAsk                = 97
+	historicalTicksLast                  = 98
+	TickByTick                           = 99
+	orderBound                           = 100
+	completedOrder                       = 101
+	completedOrdersEnd                   = 102
+	replaceFaEnd                         = 103
+	wshMetaData                          = 104
+	wshEventData                         = 105
+	historicalSchedule                   = 106
 )
 
-// # incoming msg id's
-// class IN:
-const (
-	EndConn                                  = 0
-	TICK_PRICE                               = 1
-	TICK_SIZE                                = 2
-	ORDER_STATUS                             = 3
-	ErrMsg                                   = 4
-	OPEN_ORDER                               = 5
-	ACCT_VALUE                               = 6
-	PORTFOLIO_VALUE                          = 7
-	ACCT_UPDATE_TIME                         = 8
-	NextValidId                              = 9
-	ContractData                             = 10
-	EXECUTION_DATA                           = 11
-	MARKET_DEPTH                             = 12
-	MARKET_DEPTH_L2                          = 13
-	NEWS_BULLETINS                           = 14
-	ManagedAccounts                          = 15
-	RECEIVE_FA                               = 16
-	HISTORICAL_DATA                          = 17
-	BOND_CONTRACT_DATA                       = 18
-	SCANNER_PARAMETERS                       = 19
-	SCANNER_DATA                             = 20
-	TICK_OPTION_COMPUTATION                  = 21
-	TICK_GENERIC                             = 45
-	TICK_STRING                              = 46
-	TICK_EFP                                 = 47
-	CURRENT_TIME                             = 49
-	RealTimeBars                             = 50
-	FUNDAMENTAL_DATA                         = 51
-	ContractDataEnd                          = 52
-	OPEN_ORDER_END                           = 53
-	ACCT_DOWNLOAD_END                        = 54
-	EXECUTION_DATA_END                       = 55
-	DELTA_NEUTRAL_VALIDATION                 = 56
-	TICK_SNAPSHOT_END                        = 57
-	MARKET_DATA_TYPE                         = 58
-	COMMISSION_REPORT                        = 59
-	POSITION_DATA                            = 61
-	POSITION_END                             = 62
-	ACCOUNT_SUMMARY                          = 63
-	ACCOUNT_SUMMARY_END                      = 64
-	VERIFY_MESSAGE_API                       = 65
-	VERIFY_COMPLETED                         = 66
-	DISPLAY_GROUP_LIST                       = 67
-	DISPLAY_GROUP_UPDATED                    = 68
-	VERIFY_AND_AUTH_MESSAGE_API              = 69
-	VERIFY_AND_AUTH_COMPLETED                = 70
-	POSITION_MULTI                           = 71
-	POSITION_MULTI_END                       = 72
-	ACCOUNT_UPDATE_MULTI                     = 73
-	ACCOUNT_UPDATE_MULTI_END                 = 74
-	SECURITY_DEFINITION_OPTION_PARAMETER     = 75
-	SECURITY_DEFINITION_OPTION_PARAMETER_END = 76
-	SOFT_DOLLAR_TIERS                        = 77
-	FAMILY_CODES                             = 78
-	SYMBOL_SAMPLES                           = 79
-	MKT_DEPTH_EXCHANGES                      = 80
-	TICK_REQ_PARAMS                          = 81
-	SMART_COMPONENTS                         = 82
-	NEWS_ARTICLE                             = 83
-	TICK_NEWS                                = 84
-	NEWS_PROVIDERS                           = 85
-	HISTORICAL_NEWS                          = 86
-	HISTORICAL_NEWS_END                      = 87
-	HEAD_TIMESTAMP                           = 88
-	HISTOGRAM_DATA                           = 89
-	HISTORICAL_DATA_UPDATE                   = 90
-	REROUTE_MKT_DATA_REQ                     = 91
-	REROUTE_MKT_DEPTH_REQ                    = 92
-	MARKET_RULE                              = 93
-	PNL                                      = 94
-	PNL_SINGLE                               = 95
-	HISTORICAL_TICKS                         = 96
-	HISTORICAL_TICKS_BID_ASK                 = 97
-	HISTORICAL_TICKS_LAST                    = 98
-	TickByTick                               = 99
-	ORDER_BOUND                              = 100
-	COMPLETED_ORDER                          = 101
-	COMPLETED_ORDERS_END                     = 102
-	REPLACE_FA_END                           = 103
-	WSH_META_DATA                            = 104
-	WSH_EVENT_DATA                           = 105
-	HISTORICAL_SCHEDULE                      = 106
-)
-
-// # outgoing msg id's
-// class OUT:
+// Codes for outgoing messages.
 const (
 	REQ_MKT_DATA                  = 1
 	CANCEL_MKT_DATA               = 2
