@@ -34,6 +34,12 @@ type MessageBus interface {
 	Close() error
 }
 
+// Connect creates a socket connection to TWS/IBG.
+//
+// Parameters:
+// 	host 	- host to connect to
+// 	port 	- port to connect to
+// 	client 	- client id. can connect up to 32 clients
 func Connect(host string, port int, clientId int) (*IbClient, error) {
 	bus := TcpMessageBus{}
 	if err := bus.Connect(host, port, clientId); err != nil {
