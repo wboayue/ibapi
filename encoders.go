@@ -13,7 +13,7 @@ type realTimeBarsEncoder struct {
 func (e *realTimeBarsEncoder) encode() string {
 	message := messageBuilder{}
 
-	message.addInt(REQ_REAL_TIME_BARS)
+	message.addInt(requestRealTimeBars)
 	message.addInt(e.version)
 	message.addInt(e.requestId)
 	message.addInt(e.contract.ContractId)
@@ -54,7 +54,7 @@ type tickByTickEncoder struct {
 func (e *tickByTickEncoder) encode() string {
 	message := messageBuilder{}
 
-	message.addInt(REQ_TICK_BY_TICK_DATA)
+	message.addInt(requestTickByTickData)
 	message.addInt(e.requestId)
 
 	message.addInt(e.contract.ContractId)
@@ -90,7 +90,7 @@ type contractDetailsEncoder struct {
 func (e *contractDetailsEncoder) encode() string {
 	message := messageBuilder{}
 
-	message.addInt(REQ_CONTRACT_DATA)
+	message.addInt(requestContractData)
 	message.addInt(e.version)
 	message.addInt(e.requestId)
 

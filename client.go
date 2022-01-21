@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	IbDateLayout  = "20060102 15:04:05 MST"
-	ClientVersion = 2
+	ibDateLayout  = "20060102 15:04:05 MST"
+	clientVersion = 2
 )
 
 type IbClient struct {
@@ -82,7 +82,7 @@ func (c *IbClient) handshake() error {
 		return stacktrace.Propagate(err, "error parsing server version: %v", fields[0])
 	}
 
-	c.ServerTime, err = time.Parse(IbDateLayout, fields[1])
+	c.ServerTime, err = time.Parse(ibDateLayout, fields[1])
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
 	}
@@ -129,7 +129,7 @@ func (c *IbClient) readFirstPacket() ([]string, error) {
 }
 
 func (c *IbClient) startApi(clientId int) error {
-	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", StartApi, ClientVersion, clientId)
+	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", startApi, clientVersion, clientId)
 	if c.ServerVersion > MinServerVerOptionalCapabilities {
 		msg = msg + "\x00"
 	}
@@ -153,14 +153,14 @@ func (c *IbClient) ProcessMessages() {
 		scanner := &parser{fields[1:]}
 
 		switch msgId {
-		case EndConn:
+		case endConn:
 			log.Println("connection ended")
 			return
-		case NextValidId:
+		case nextValidId:
 			c.handleNextValidId(scanner)
-		case ManagedAccounts:
+		case managedAccounts:
 			c.handleManagedAccounts(scanner)
-		case ErrMsg:
+		case errMsg:
 			c.handleErrorMessage(scanner)
 		default:
 			requestId := getRequestId(msgId, fields)
@@ -179,9 +179,9 @@ func getRequestId(msgId int, fields []string) int {
 	text := ""
 
 	switch msgId {
-	case ContractData, TickByTick:
+	case contractData, TickByTick:
 		text = fields[1]
-	case ContractDataEnd, RealTimeBars:
+	case contractDataEnd, realTimeBars:
 		text = fields[2]
 	default:
 		log.Fatalf("could not determine request id for message ID %d: %v\n", msgId, fields)
@@ -280,7 +280,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 					log.Printf("error parsing messageId [%s]: %v", message[0], err)
 				}
 
-				if messageId == RealTimeBars {
+				if messageId == realTimeBars {
 					bar := decodeRealTimeBars(message)
 					bars <- bar
 				} else {
@@ -304,7 +304,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	message := messageBuilder{}
 
 	version := 1
-	message.addInt(CancelRealTimeBars)
+	message.addInt(cancelRealTimeBars)
 	message.addInt(version)
 	message.addInt(requestId)
 
@@ -390,7 +390,7 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 
 	message := messageBuilder{}
 
-	message.addInt(CANCEL_TICK_BY_TICK_DATA)
+	message.addInt(cancelTickByTickData)
 	message.addInt(requestId)
 
 	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
@@ -516,9 +516,9 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 				log.Printf("error parsing messageId [%s]: %v", message[0], err)
 			}
 
-			if messageId == ContractDataEnd {
+			if messageId == contractDataEnd {
 				c.removeChannel(encoder.requestId)
-			} else if messageId == ContractData {
+			} else if messageId == contractData {
 				contract := decodeContractDetails(c.ServerVersion, message)
 				contracts = append(contracts, contract)
 			} else {
