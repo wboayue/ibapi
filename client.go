@@ -62,7 +62,7 @@ func Connect(host string, port int, clientId int) (*IbClient, error) {
 
 func (c *IbClient) handshake() error {
 	prefix := "API\x00"
-	version := fmt.Sprintf("v%d..%d", MinClientVer, MaxClientVer)
+	version := fmt.Sprintf("v%d..%d", minClientVer, maxClientVer)
 
 	if err := c.MessageBus.Write(prefix); err != nil {
 		return stacktrace.Propagate(err, "error sending prefix")
@@ -179,7 +179,7 @@ func getRequestId(msgId int, fields []string) int {
 	text := ""
 
 	switch msgId {
-	case contractData, TickByTick:
+	case contractData, tickByTick:
 		text = fields[1]
 	case contractDataEnd, realTimeBars:
 		text = fields[2]
@@ -231,7 +231,7 @@ func (c *IbClient) handleErrorMessage(scanner *parser) {
 // 	whatToShow 	- TRADES, MIDPOINT, BID, ASK
 // 	useRth 		- use regular trading hours
 func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (<-chan Bar, error) {
-	if c.ServerVersion < MinServerVersionRealTimeBars {
+	if c.ServerVersion < minServerVersionRealTimeBars {
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
@@ -295,7 +295,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 
 // cancelRealTimeBar cancels a request for real time bars.
 func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error {
-	if c.ServerVersion < MinServerVersionRealTimeBars {
+	if c.ServerVersion < minServerVersionRealTimeBars {
 		return stacktrace.NewError("server version %d does not support real time bars cancellation", c.ServerVersion)
 	}
 
@@ -367,7 +367,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 					log.Printf("error parsing messageId [%s]: %v", message[0], err)
 				}
 
-				if messageId == TickByTick {
+				if messageId == tickByTick {
 					trade := decodeTickByTickTrade(c.ServerVersion, message)
 					trades <- trade
 				} else {
@@ -451,7 +451,7 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 					log.Printf("error parsing messageId [%s]: %v", message[0], err)
 				}
 
-				if messageId == TickByTick {
+				if messageId == tickByTick {
 					spread := decodeTickByTickBidAsk(c.ServerVersion, message)
 					spreads <- spread
 				} else {

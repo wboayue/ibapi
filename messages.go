@@ -82,7 +82,7 @@ const (
 	historicalTicks                      = 96
 	historicalTicksBidAsk                = 97
 	historicalTicksLast                  = 98
-	TickByTick                           = 99
+	tickByTick                           = 99
 	orderBound                           = 100
 	completedOrder                       = 101
 	completedOrdersEnd                   = 102

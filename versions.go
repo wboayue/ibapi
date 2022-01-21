@@ -1,9 +1,9 @@
 package ibapi
 
 const (
-	MinServerVersionRealTimeBars            = 34
-	MinServerVer_SCALE_ORDERS               = 35
-	MinServerVer_SNAPSHOT_MKT_DATA          = 35
+	minServerVersionRealTimeBars            = 34
+	minServerVerScaleOrders                 = 35
+	minServerVerSnapshotMarketData          = 35
 	MinServerVer_SSHORT_COMBO_LEGS          = 35
 	MinServerVer_WHAT_IF_ORDERS             = 36
 	MinServerVer_CONTRACT_CONID             = 37
@@ -106,11 +106,11 @@ const (
 	MinServerVer_AUTO_CANCEL_PARENT         = 162
 	MinServerVer_FRACTIONAL_SIZE_SUPPORT    = 163
 	MinServerVer_SIZE_RULES                 = 164
-	MinServerVerHistoricalSchedule          = 165
+	minServerVerHistoricalSchedule          = 165
 
 	// 100+ messaging
 	// 100 = enhanced handshake, msg length prefixes
 
-	MinClientVer = 100
-	MaxClientVer = MinServerVerHistoricalSchedule
+	minClientVer = 100
+	maxClientVer = minServerVerHistoricalSchedule
 )
