@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	IbDateLayout  = "20060102 15:04:05 MST"
-	ClientVersion = 2
+	ibDateLayout  = "20060102 15:04:05 MST"
+	clientVersion = 2
 )
 
 type IbClient struct {
@@ -82,7 +82,7 @@ func (c *IbClient) handshake() error {
 		return stacktrace.Propagate(err, "error parsing server version: %v", fields[0])
 	}
 
-	c.ServerTime, err = time.Parse(IbDateLayout, fields[1])
+	c.ServerTime, err = time.Parse(ibDateLayout, fields[1])
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
 	}
@@ -129,7 +129,7 @@ func (c *IbClient) readFirstPacket() ([]string, error) {
 }
 
 func (c *IbClient) startApi(clientId int) error {
-	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", StartApi, ClientVersion, clientId)
+	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", startApi, clientVersion, clientId)
 	if c.ServerVersion > MinServerVerOptionalCapabilities {
 		msg = msg + "\x00"
 	}
@@ -304,7 +304,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 	message := messageBuilder{}
 
 	version := 1
-	message.addInt(CancelRealTimeBars)
+	message.addInt(cancelRealTimeBars)
 	message.addInt(version)
 	message.addInt(requestId)
 
@@ -390,7 +390,7 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 
 	message := messageBuilder{}
 
-	message.addInt(CANCEL_TICK_BY_TICK_DATA)
+	message.addInt(cancelTickByTickData)
 	message.addInt(requestId)
 
 	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
