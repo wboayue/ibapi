@@ -32,7 +32,7 @@ func (e *realTimeBarsEncoder) encode() string {
 	message.addString(e.whatToShow)
 	message.addBool(e.useRth)
 
-	if e.serverVersion >= MinServerVersionLinking {
+	if e.serverVersion >= minServerVersionLinking {
 		// realtime bar options
 		message.addString("")
 	}
@@ -71,7 +71,7 @@ func (e *tickByTickEncoder) encode() string {
 	message.addString(e.contract.TradingClass)
 	message.addString(e.tickType)
 
-	if e.serverVersion > MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+	if e.serverVersion > minServerVerTickByTickIgnoreSize {
 		message.addInt(e.numberOfTicks)
 		message.addBool(e.ignoreSize)
 	}

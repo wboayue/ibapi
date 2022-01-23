@@ -19,7 +19,7 @@ func TestRealTimeBarsEncoder(t *testing.T) {
 
 	t.Run("with trading class available", func(t *testing.T) {
 		request := realTimeBarsEncoder{
-			serverVersion: MinServerVersionLinking,
+			serverVersion: minServerVersionLinking,
 			version:       3,
 			requestId:     1,
 			contract:      contract,
@@ -57,7 +57,7 @@ func TestTickByTickEncoder(t *testing.T) {
 
 	t.Run("tick by tick trades", func(t *testing.T) {
 		request := tickByTickEncoder{
-			serverVersion: MinServerVer_TICK_BY_TICK_IGNORE_SIZE,
+			serverVersion: minServerVerTickByTickIgnoreSize,
 			requestId:     2,
 			contract:      contract,
 			tickType:      "AllLast",
@@ -70,7 +70,7 @@ func TestTickByTickEncoder(t *testing.T) {
 
 	t.Run("tick by tick top of book", func(t *testing.T) {
 		request := tickByTickEncoder{
-			serverVersion: MinServerVer_TICK_BY_TICK,
+			serverVersion: minServerVerTickByTick,
 			requestId:     2,
 			contract:      contract,
 			tickType:      "BidAsk",
@@ -91,7 +91,7 @@ func TestContractDetailsEncoder(t *testing.T) {
 	}
 
 	request := contractDetailsEncoder{
-		serverVersion: MinServerVersionLinking,
+		serverVersion: minServerVersionLinking,
 		requestId:     2,
 		contract:      contract,
 	}
