@@ -136,7 +136,7 @@ func (c *IbClient) readFirstPacket() ([]string, error) {
 
 func (c *IbClient) startApi(clientId int) error {
 	msg := fmt.Sprintf("%d\x00%d\x00%d\x00", startApi, clientVersion, clientId)
-	if c.ServerVersion > MinServerVerOptionalCapabilities {
+	if c.ServerVersion > minServerVerOptionalCapabilities {
 		msg = msg + "\x00"
 	}
 	return c.MessageBus.WritePacket(msg)
@@ -241,7 +241,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVersionTradingClass {
+	if c.ServerVersion < minServerVersionTradingClass {
 		return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 	}
 
@@ -324,11 +324,11 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 
 // TickByTickTrades requests tick by tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
-	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+	if c.ServerVersion < minServerVerTickByTickIgnoreSize {
 		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
 	}
 
@@ -388,7 +388,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 
 // cancelTickByTickData cancels a request for tick by tick data.
 func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) error {
-	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+	if c.ServerVersion < minServerVerTickByTick {
 		return stacktrace.NewError("server version %d does not support tick by tick cancellation", c.ServerVersion)
 	}
 
@@ -408,11 +408,11 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 
 // TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
-	if c.ServerVersion < MinServerVer_TICK_BY_TICK {
+	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVer_TICK_BY_TICK_IGNORE_SIZE {
+	if c.ServerVersion < minServerVerTickByTickIgnoreSize {
 		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
 	}
 
@@ -474,15 +474,15 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 // This method will provide all the contracts matching the contract provided.
 // It can also be used to retrieve complete options and futures chains.
 func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]ContractDetails, error) {
-	if c.ServerVersion < MinServerVersionSecurityIdType {
+	if c.ServerVersion < minServerVersionSecurityIdType {
 		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVersionTradingClass {
+	if c.ServerVersion < minServerVersionTradingClass {
 		return nil, stacktrace.NewError("server version %d does not support TradingClass field in Contract", c.ServerVersion)
 	}
 
-	if c.ServerVersion < MinServerVersionLinking {
+	if c.ServerVersion < minServerVersionLinking {
 		return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
 	}
 
