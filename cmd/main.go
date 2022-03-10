@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	client, err := ibapi.Connect("localhost", 4002, 100)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	client, err := ibapi.Connect("127.0.0.1", 4002, 200)
 	if err != nil {
 		log.Printf("error connecting: %v", err)
 		return
@@ -21,19 +23,21 @@ func main() {
 	fmt.Printf("server version: %v\n", client.ServerVersion)
 	fmt.Printf("server time: %v\n", client.ServerTime)
 
-	go client.ProcessMessages()
-
 	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
 
 	// realTimeBars(ctx, client)
 	// contractDetails(ctx, client)
-	tickByTickTrades(ctx, client)
+	// tickByTickTrades(ctx, client)
 	// tickByTickSpreads(ctx, client)
+	tickByTick(ctx, client)
+	fmt.Println("done")
 }
 
 func realTimeBars(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		LocalSymbol: "ESH2",
+		LocalSymbol: "ESJ2",
 		// LocalSymbol:  "6EF2",
 		SecurityType: "FUT",
 		Currency:     "USD",
@@ -114,5 +118,45 @@ func tickByTickSpreads(ctx context.Context, client *ibapi.IbClient) {
 
 	for spread := range spreads {
 		fmt.Printf("bid/ask: %+v\n", spread)
+	}
+}
+
+func tickByTick(ctx context.Context, client *ibapi.IbClient) {
+	contract := ibapi.Contract{
+		Symbol: "ES",
+		// LocalSymbol:  "ESH2",
+		SecurityType:                 "FUT",
+		Currency:                     "USD",
+		Exchange:                     "GLOBEX",
+		LastTradeDateOrContractMonth: "202203",
+	}
+
+	log.Printf("stream tick")
+
+	// contract.LastTradeDateOrContractMonth = "201803";
+	spreads, err := client.TickByTickBidAsk(ctx, contract)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
+
+	trades, err := client.TickByTickTrades(ctx, contract)
+	if err != nil {
+		log.Printf("error connecting: %v", err)
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("done")
+			return
+
+		case spread := <-spreads:
+			fmt.Printf("spread: %+v\n", spread)
+
+		case trade := <-trades:
+			fmt.Printf("trade: %+v\n", trade)
+		}
 	}
 }

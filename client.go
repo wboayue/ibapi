@@ -25,6 +25,7 @@ type IbClient struct {
 
 	currentRequestId int                   // used to generate sequence of request Ids
 	channels         map[int]chan []string // message exchange
+	connected        bool
 }
 
 type MessageBus interface {
@@ -55,11 +56,22 @@ func Connect(host string, port int, clientId int) (*IbClient, error) {
 		return nil, err
 	}
 
+	log.Println("sent handshake")
+
 	if err := client.startApi(clientId); err != nil {
 		return nil, err
 	}
 
+	client.connected = true
+
+	go client.ProcessMessages()
+	time.Sleep(1 * time.Second)
+
 	return &client, nil
+}
+
+func (c *IbClient) IsConnected() bool {
+	return c.connected
 }
 
 // type Message interface {
@@ -146,6 +158,7 @@ func (c *IbClient) ProcessMessages() {
 	for {
 		fields, err := c.readFields()
 		if err != nil {
+			c.connected = false
 			log.Printf("error reading: %v\n", err)
 			break
 		}
@@ -161,6 +174,7 @@ func (c *IbClient) ProcessMessages() {
 		switch msgId {
 		case endConn:
 			log.Println("connection ended")
+			panic("connection ended")
 			return
 		case nextValidId:
 			c.handleNextValidId(scanner)
@@ -324,6 +338,10 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 
 // TickByTickTrades requests tick by tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
+	if !c.connected {
+		return nil, stacktrace.NewError("no connection to TWS")
+	}
+
 	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
@@ -408,6 +426,10 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 
 // TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
+	if !c.connected {
+		return nil, stacktrace.NewError("no connection to TWS")
+	}
+
 	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
