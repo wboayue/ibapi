@@ -25,6 +25,7 @@ type IbClient struct {
 
 	currentRequestId int                   // used to generate sequence of request Ids
 	channels         map[int]chan []string // message exchange
+	ready            chan struct{}
 }
 
 type MessageBus interface {
@@ -55,9 +56,17 @@ func Connect(host string, port int, clientId int) (*IbClient, error) {
 		return nil, err
 	}
 
+	log.Println("sent handshake")
+
 	if err := client.startApi(clientId); err != nil {
 		return nil, err
 	}
+
+	client.ready = make(chan struct{})
+
+	go client.processMessages()
+
+	<-client.ready
 
 	return &client, nil
 }
@@ -87,11 +96,13 @@ func (c *IbClient) handshake() error {
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server version: %v", fields[0])
 	}
+	log.Printf("server version: %d", c.ServerVersion)
 
 	c.ServerTime, err = time.Parse(ibDateLayout, fields[1])
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
 	}
+	log.Printf("server time: %s", c.ServerTime)
 
 	return nil
 }
@@ -142,7 +153,7 @@ func (c *IbClient) startApi(clientId int) error {
 	return c.MessageBus.WritePacket(msg)
 }
 
-func (c *IbClient) ProcessMessages() {
+func (c *IbClient) processMessages() {
 	for {
 		fields, err := c.readFields()
 		if err != nil {
@@ -161,6 +172,7 @@ func (c *IbClient) ProcessMessages() {
 		switch msgId {
 		case endConn:
 			log.Println("connection ended")
+			panic("connection ended")
 			return
 		case nextValidId:
 			c.handleNextValidId(scanner)
@@ -202,14 +214,16 @@ func getRequestId(msgId int, fields []string) int {
 }
 
 func (c *IbClient) handleNextValidId(scanner *parser) {
-	scanner.readInt() // version
+	scanner.readInt() // skip version
 	c.NextValidOrderId = scanner.readInt()
+
+	close(c.ready)
 
 	log.Printf("next valid id: %v", c.NextValidOrderId)
 }
 
 func (c *IbClient) handleManagedAccounts(scanner *parser) {
-	scanner.readInt() // version
+	scanner.readInt() // skip version
 	c.ManagedAccounts = scanner.readString()
 
 	log.Printf("managed accounts: %v", c.ManagedAccounts)

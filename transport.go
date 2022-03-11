@@ -45,7 +45,7 @@ func (b *TcpMessageBus) Close() error {
 func (b *TcpMessageBus) Write(data string) error {
 	_, err := b.socket.Write([]byte(data))
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "error writing bytes")
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (b *TcpMessageBus) WritePacket(data string) error {
 
 	_, err := b.socket.Write(header)
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "error writing packet")
 	}
 
 	_, err = b.socket.Write([]byte(data))
@@ -74,7 +74,7 @@ func (b *TcpMessageBus) ReadPacket() (string, error) {
 	header := make([]byte, 4)
 	_, err := io.ReadFull(b.socket, header)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "error reading packet header")
 	}
 
 	size := binary.BigEndian.Uint32(header)
@@ -82,7 +82,7 @@ func (b *TcpMessageBus) ReadPacket() (string, error) {
 	data := make([]byte, size)
 	_, err = io.ReadFull(b.socket, data)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "error reading packet body")
 	}
 
 	return string(data), nil

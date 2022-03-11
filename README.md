@@ -66,3 +66,7 @@ for bar := range bars {
 # Reference
 
 * [API Documentation](https://interactivebrokers.github.io/tws-api/)
+
+# Development
+
+* [Publish Module](https://go.dev/doc/modules/publishing)
