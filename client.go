@@ -25,7 +25,7 @@ type IbClient struct {
 
 	currentRequestId int                   // used to generate sequence of request Ids
 	channels         map[int]chan []string // message exchange
-	connected        bool
+	ready            chan struct{}
 }
 
 type MessageBus interface {
@@ -62,16 +62,13 @@ func Connect(host string, port int, clientId int) (*IbClient, error) {
 		return nil, err
 	}
 
-	client.connected = true
+	client.ready = make(chan struct{})
 
-	go client.ProcessMessages()
-	time.Sleep(1 * time.Second)
+	go client.processMessages()
+
+	<-client.ready
 
 	return &client, nil
-}
-
-func (c *IbClient) IsConnected() bool {
-	return c.connected
 }
 
 // type Message interface {
@@ -99,11 +96,13 @@ func (c *IbClient) handshake() error {
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server version: %v", fields[0])
 	}
+	log.Printf("server version: %d", c.ServerVersion)
 
 	c.ServerTime, err = time.Parse(ibDateLayout, fields[1])
 	if err != nil {
 		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
 	}
+	log.Printf("server time: %s", c.ServerTime)
 
 	return nil
 }
@@ -154,11 +153,10 @@ func (c *IbClient) startApi(clientId int) error {
 	return c.MessageBus.WritePacket(msg)
 }
 
-func (c *IbClient) ProcessMessages() {
+func (c *IbClient) processMessages() {
 	for {
 		fields, err := c.readFields()
 		if err != nil {
-			c.connected = false
 			log.Printf("error reading: %v\n", err)
 			break
 		}
@@ -216,14 +214,16 @@ func getRequestId(msgId int, fields []string) int {
 }
 
 func (c *IbClient) handleNextValidId(scanner *parser) {
-	scanner.readInt() // version
+	scanner.readInt() // skip version
 	c.NextValidOrderId = scanner.readInt()
+
+	close(c.ready)
 
 	log.Printf("next valid id: %v", c.NextValidOrderId)
 }
 
 func (c *IbClient) handleManagedAccounts(scanner *parser) {
-	scanner.readInt() // version
+	scanner.readInt() // skip version
 	c.ManagedAccounts = scanner.readString()
 
 	log.Printf("managed accounts: %v", c.ManagedAccounts)
@@ -338,10 +338,6 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 
 // TickByTickTrades requests tick by tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
-	if !c.connected {
-		return nil, stacktrace.NewError("no connection to TWS")
-	}
-
 	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
@@ -426,10 +422,6 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 
 // TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
-	if !c.connected {
-		return nil, stacktrace.NewError("no connection to TWS")
-	}
-
 	if c.ServerVersion < minServerVerTickByTick {
 		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
 	}
