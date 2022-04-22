@@ -70,3 +70,11 @@ for bar := range bars {
 # Development
 
 * [Publish Module](https://go.dev/doc/modules/publishing)
+
+```bash
+git tag                 # list tags
+git tag vx.y.z          # create tag
+git push origin vx.y.z  # push tags to origin
+GOPROXY=proxy.golang.org go list -m github.com/wboayue/ibapi@vx.y.z     # publish to package repo
+```
+

@@ -123,12 +123,10 @@ func tickByTickSpreads(ctx context.Context, client *ibapi.IbClient) {
 
 func tickByTick(ctx context.Context, client *ibapi.IbClient) {
 	contract := ibapi.Contract{
-		Symbol: "ES",
-		// LocalSymbol:  "ESH2",
-		SecurityType:                 "FUT",
-		Currency:                     "USD",
-		Exchange:                     "GLOBEX",
-		LastTradeDateOrContractMonth: "202203",
+		LocalSymbol:  "ESM2",
+		SecurityType: "FUT",
+		Currency:     "USD",
+		Exchange:     "GLOBEX",
 	}
 
 	log.Printf("stream tick")
@@ -152,10 +150,16 @@ func tickByTick(ctx context.Context, client *ibapi.IbClient) {
 			fmt.Println("done")
 			return
 
-		case spread := <-spreads:
+		case spread, ok := <-spreads:
+			if !ok {
+				break
+			}
 			fmt.Printf("spread: %+v\n", spread)
 
-		case trade := <-trades:
+		case trade, ok := <-trades:
+			if !ok {
+				break
+			}
 			fmt.Printf("trade: %+v\n", trade)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/palantir/stacktrace"
@@ -14,6 +15,7 @@ import (
 const (
 	ibDateLayout  = "20060102 15:04:05 MST"
 	clientVersion = 2
+	noRequest     = -1
 )
 
 type IbClient struct {
@@ -26,6 +28,7 @@ type IbClient struct {
 	currentRequestId int                   // used to generate sequence of request Ids
 	channels         map[int]chan []string // message exchange
 	ready            chan struct{}
+	mu               sync.Mutex
 }
 
 type MessageBus interface {
@@ -173,22 +176,22 @@ func (c *IbClient) processMessages() {
 		case endConn:
 			log.Println("connection ended")
 			panic("connection ended")
-			return
 		case nextValidId:
 			c.handleNextValidId(scanner)
 		case managedAccounts:
 			c.handleManagedAccounts(scanner)
 		case errMsg:
-			c.handleErrorMessage(scanner)
+			c.handleErrorMessage(scanner, fields)
 		default:
 			requestId := getRequestId(msgId, fields)
 
-			channel, ok := c.channels[requestId]
-			if ok {
-				channel <- fields
-			} else {
+			channel := c.getChannel(requestId)
+			if channel == nil {
 				log.Printf("no receiver found for request id %d: %v", requestId, fields)
+				continue
 			}
+
+			channel <- fields
 		}
 	}
 }
@@ -229,16 +232,25 @@ func (c *IbClient) handleManagedAccounts(scanner *parser) {
 	log.Printf("managed accounts: %v", c.ManagedAccounts)
 }
 
-func (c *IbClient) handleErrorMessage(scanner *parser) {
+func (c *IbClient) handleErrorMessage(scanner *parser, fields []string) {
 	version := scanner.readInt()
 	if version < 2 {
 		log.Println(scanner.readString())
 	} else {
-		id := scanner.readInt()
+		requestId := scanner.readInt()
 		code := scanner.readInt()
 		msg := scanner.readString()
 
-		log.Printf("id: %d, code: %d, msg: %s", id, code, msg)
+		if requestId == noRequest {
+			log.Printf("error message[%d]: %s", code, msg)
+		} else {
+			channel, ok := c.channels[requestId]
+			if ok {
+				channel <- fields
+			} else {
+				log.Printf("no receiver found for request id %d:%d: %v", requestId, code, msg)
+			}
+		}
 	}
 }
 
@@ -474,6 +486,10 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 				if messageId == tickByTick {
 					spread := decodeTickByTickBidAsk(c.ServerVersion, message)
 					spreads <- spread
+				} else if messageId == errMsg {
+					log.Printf("error: %v", message)
+					close(spreads)
+					return
 				} else {
 					log.Printf("unexpected message: %v", message)
 				}
@@ -551,15 +567,29 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 // Utility Methods
 
 func (c *IbClient) addChannel(requestId int) chan []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	channel := make(chan []string)
 	c.channels[requestId] = channel
+
 	return channel
 }
 
 func (c *IbClient) removeChannel(requestId int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	channel := c.channels[requestId]
 	if channel != nil {
 		delete(c.channels, requestId)
 		close(channel)
 	}
+}
+
+func (c *IbClient) getChannel(requestId int) chan []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.channels[requestId]
 }
