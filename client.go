@@ -296,7 +296,6 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 			select {
 			case <-ctx.Done():
 				c.cancelRealTimeBars(ctx, encoder.requestId)
-				time.Sleep(200 * time.Millisecond)
 				c.removeChannel(encoder.requestId)
 				close(bars)
 				return
@@ -383,7 +382,6 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 			select {
 			case <-ctx.Done():
 				c.cancelTickByTickData(ctx, encoder.requestId)
-				time.Sleep(200 * time.Millisecond)
 				c.removeChannel(encoder.requestId)
 				close(trades)
 				return
@@ -467,7 +465,6 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 			select {
 			case <-ctx.Done():
 				c.cancelTickByTickData(ctx, encoder.requestId)
-				time.Sleep(200 * time.Millisecond)
 				c.removeChannel(encoder.requestId)
 				close(spreads)
 				return
