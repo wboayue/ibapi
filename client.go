@@ -28,7 +28,10 @@ type IbClient struct {
 	currentRequestId int                   // used to generate sequence of request Ids
 	channels         map[int]chan []string // message exchange
 	ready            chan struct{}
-	mu               sync.Mutex
+
+	mu                   sync.Mutex
+	requestIdMutex       sync.Mutex
+	contractDetailsMutex sync.Mutex
 }
 
 type MessageBus interface {
@@ -74,10 +77,6 @@ func Connect(host string, port int, clientId int) (*IbClient, error) {
 	return &client, nil
 }
 
-// type Message interface {
-// 	Encode() []byte
-// }
-
 func (c *IbClient) handshake() error {
 	prefix := "API\x00"
 	version := fmt.Sprintf("v%d..%d", minClientVer, maxClientVer)
@@ -119,8 +118,12 @@ func (c *IbClient) Close() error {
 }
 
 func (c *IbClient) nextRequestId() int {
+	c.requestIdMutex.Lock()
+	defer c.requestIdMutex.Unlock()
+
 	tmp := c.currentRequestId
 	c.currentRequestId++
+
 	return tmp + 9000
 }
 
@@ -512,6 +515,9 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 	if c.ServerVersion < minServerVersionLinking {
 		return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
 	}
+
+	c.contractDetailsMutex.Lock()
+	defer c.contractDetailsMutex.Unlock()
 
 	// create and send request
 
