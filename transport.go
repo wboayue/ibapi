@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-
-	"github.com/palantir/stacktrace"
 )
 
 // TcpMessageBus implements the MessageBus over TCP
@@ -26,7 +24,7 @@ func (b *TcpMessageBus) Connect(host string, port int, clientId int) error {
 	var err error
 	b.socket, err = net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
-		return stacktrace.Propagate(err, "error dialing %s:%d", host, port)
+		return fmt.Errorf("error dialing %s:%d: %w", host, port, err)
 	}
 
 	return nil
@@ -45,7 +43,7 @@ func (b *TcpMessageBus) Close() error {
 func (b *TcpMessageBus) Write(data string) error {
 	_, err := b.socket.Write([]byte(data))
 	if err != nil {
-		return stacktrace.Propagate(err, "error writing bytes")
+		return fmt.Errorf("error writing bytes: %w", err)
 	}
 
 	return nil
@@ -58,7 +56,7 @@ func (b *TcpMessageBus) WritePacket(data string) error {
 
 	_, err := b.socket.Write(header)
 	if err != nil {
-		return stacktrace.Propagate(err, "error writing packet")
+		return fmt.Errorf("error writing packet: %w", err)
 	}
 
 	_, err = b.socket.Write([]byte(data))
@@ -74,7 +72,7 @@ func (b *TcpMessageBus) ReadPacket() (string, error) {
 	header := make([]byte, 4)
 	_, err := io.ReadFull(b.socket, header)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "error reading packet header")
+		return "", fmt.Errorf("error reading packet header: %w", err)
 	}
 
 	size := binary.BigEndian.Uint32(header)
@@ -82,7 +80,7 @@ func (b *TcpMessageBus) ReadPacket() (string, error) {
 	data := make([]byte, size)
 	_, err = io.ReadFull(b.socket, data)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "error reading packet body")
+		return "", fmt.Errorf("error reading packet body: %w", err)
 	}
 
 	return string(data), nil
