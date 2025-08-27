@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/palantir/stacktrace"
 )
 
 const (
@@ -82,27 +80,27 @@ func (c *IbClient) handshake() error {
 	version := fmt.Sprintf("v%d..%d", minClientVer, maxClientVer)
 
 	if err := c.MessageBus.Write(prefix); err != nil {
-		return stacktrace.Propagate(err, "error sending prefix")
+		return fmt.Errorf("error sending prefix: %w", err)
 	}
 
 	if err := c.MessageBus.WritePacket(version); err != nil {
-		return stacktrace.Propagate(err, "error sending version")
+		return fmt.Errorf("error sending version: %w", err)
 	}
 
 	fields, err := c.readFirstPacket()
 	if err != nil {
-		return stacktrace.Propagate(err, "error reading first packet")
+		return fmt.Errorf("error reading first packet: %w", err)
 	}
 
 	c.ServerVersion, err = strconv.Atoi(fields[0])
 	if err != nil {
-		return stacktrace.Propagate(err, "error parsing server version: %v", fields[0])
+		return fmt.Errorf("error parsing server version %v: %w", fields[0], err)
 	}
 	log.Printf("server version: %d", c.ServerVersion)
 
 	c.ServerTime, err = time.Parse(ibDateLayout, fields[1])
 	if err != nil {
-		return stacktrace.Propagate(err, "error parsing server time: %v", fields[1])
+		return fmt.Errorf("error parsing server time %v: %w", fields[1], err)
 	}
 	log.Printf("server time: %s", c.ServerTime)
 
@@ -130,7 +128,7 @@ func (c *IbClient) nextRequestId() int {
 func (c *IbClient) readFields() ([]string, error) {
 	data, err := c.MessageBus.ReadPacket()
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error reading packet")
+		return nil, fmt.Errorf("error reading packet: %w", err)
 	}
 	return strings.Split(string(data[:len(data)-1]), "\x00"), nil
 }
@@ -138,14 +136,14 @@ func (c *IbClient) readFields() ([]string, error) {
 func (c *IbClient) readFirstPacket() ([]string, error) {
 	fields, err := c.readFields()
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error reading fields")
+		return nil, fmt.Errorf("error reading fields: %w", err)
 	}
 
 	if len(fields) != 2 {
 		for _, field := range fields {
 			fmt.Println("-" + field)
 		}
-		return nil, stacktrace.NewError("expected 2 fields, got %d: %v", len(fields), fields)
+		return nil, fmt.Errorf("expected 2 fields, got %d: %v", len(fields), fields)
 	}
 
 	return fields, nil
@@ -267,11 +265,11 @@ func (c *IbClient) handleErrorMessage(scanner *parser, fields []string) {
 // 	useRth 		- use regular trading hours
 func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToShow string, useRth bool) (<-chan Bar, error) {
 	if c.ServerVersion < minServerVersionRealTimeBars {
-		return nil, stacktrace.NewError("server version %d does not support real time bars", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support real time bars", c.ServerVersion)
 	}
 
 	if c.ServerVersion < minServerVersionTradingClass {
-		return nil, stacktrace.NewError("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support TradingClass or ContractId fields", c.ServerVersion)
 	}
 
 	encoder := realTimeBarsEncoder{
@@ -287,7 +285,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error sending request market data message")
+		return nil, fmt.Errorf("error sending request market data message: %w", err)
 	}
 
 	// process response
@@ -330,7 +328,7 @@ func (c *IbClient) RealTimeBars(ctx context.Context, contract Contract, whatToSh
 // cancelRealTimeBar cancels a request for real time bars.
 func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error {
 	if c.ServerVersion < minServerVersionRealTimeBars {
-		return stacktrace.NewError("server version %d does not support real time bars cancellation", c.ServerVersion)
+		return fmt.Errorf("server version %d does not support real time bars cancellation", c.ServerVersion)
 	}
 
 	log.Printf("canceling real time bar request %v.", requestId)
@@ -344,7 +342,7 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 
 	// interface for this
 	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
-		return stacktrace.Propagate(err, "error sending request to cancel market data")
+		return fmt.Errorf("error sending request to cancel market data: %w", err)
 	}
 
 	return nil
@@ -353,11 +351,11 @@ func (c *IbClient) cancelRealTimeBars(ctx context.Context, requestId int) error 
 // TickByTickTrades requests tick by tick trades.
 func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (chan Trade, error) {
 	if c.ServerVersion < minServerVerTickByTick {
-		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support tick-by-tick data requests", c.ServerVersion)
 	}
 
 	if c.ServerVersion < minServerVerTickByTickIgnoreSize {
-		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests", c.ServerVersion)
 	}
 
 	encoder := tickByTickEncoder{
@@ -373,7 +371,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error sending request for tick by tick trades")
+		return nil, fmt.Errorf("error sending request for tick by tick trades: %w", err)
 	}
 
 	// process response
@@ -416,7 +414,7 @@ func (c *IbClient) TickByTickTrades(ctx context.Context, contract Contract) (cha
 // cancelTickByTickData cancels a request for tick by tick data.
 func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) error {
 	if c.ServerVersion < minServerVerTickByTick {
-		return stacktrace.NewError("server version %d does not support tick by tick cancellation", c.ServerVersion)
+		return fmt.Errorf("server version %d does not support tick by tick cancellation", c.ServerVersion)
 	}
 
 	log.Printf("canceling tick by tick data request %v.", requestId)
@@ -427,7 +425,7 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 	message.addInt(requestId)
 
 	if err := c.MessageBus.WritePacket(message.Encode()); err != nil {
-		return stacktrace.Propagate(err, "error sending request to cancel tick by tick data")
+		return fmt.Errorf("error sending request to cancel tick by tick data: %w", err)
 	}
 
 	return nil
@@ -436,11 +434,11 @@ func (c *IbClient) cancelTickByTickData(ctx context.Context, requestId int) erro
 // TickByTickBidAsk requests tick-by-tick bid/ask.
 func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (chan BidAsk, error) {
 	if c.ServerVersion < minServerVerTickByTick {
-		return nil, stacktrace.NewError("server version %d does not support tick-by-tick data requests.", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support tick-by-tick data requests", c.ServerVersion)
 	}
 
 	if c.ServerVersion < minServerVerTickByTickIgnoreSize {
-		return nil, stacktrace.NewError("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests.", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support ignore_size and number_of_ticks parameters in tick-by-tick data requests", c.ServerVersion)
 	}
 
 	encoder := tickByTickEncoder{
@@ -456,7 +454,7 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error sending request for tick by tick bid/ask")
+		return nil, fmt.Errorf("error sending request for tick by tick bid/ask: %w", err)
 	}
 
 	// process response
@@ -505,15 +503,15 @@ func (c *IbClient) TickByTickBidAsk(ctx context.Context, contract Contract) (cha
 // It can also be used to retrieve complete options and futures chains.
 func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]ContractDetails, error) {
 	if c.ServerVersion < minServerVersionSecurityIdType {
-		return nil, stacktrace.NewError("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support SecurityIdType or SecurityId fields", c.ServerVersion)
 	}
 
 	if c.ServerVersion < minServerVersionTradingClass {
-		return nil, stacktrace.NewError("server version %d does not support TradingClass field in Contract", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support TradingClass field in Contract", c.ServerVersion)
 	}
 
 	if c.ServerVersion < minServerVersionLinking {
-		return nil, stacktrace.NewError("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
+		return nil, fmt.Errorf("server version %d does not support PrimaryExchange field in Contract", c.ServerVersion)
 	}
 
 	c.contractDetailsMutex.Lock()
@@ -532,7 +530,7 @@ func (c *IbClient) ContractDetails(ctx context.Context, contract Contract) ([]Co
 
 	err := c.MessageBus.WritePacket(encoder.encode())
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error sending contract details request")
+		return nil, fmt.Errorf("error sending contract details request: %w", err)
 	}
 
 	// process response
