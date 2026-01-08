@@ -1,5 +1,7 @@
 # Interactive Brokers API - Go
 
+> **⚠️ ARCHIVED:** This repository is no longer maintained. Development efforts have moved to [rust-ibapi](https://github.com/wboayue/rust-ibapi), a more complete Rust implementation of the Interactive Brokers API.
+
 [![test](https://github.com/wboayue/ibapi/workflows/ci/badge.svg)](https://github.com/wboayue/ibapi/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/wboayue/ibapi/branch/main/graph/badge.svg)](https://codecov.io/gh/wboayue/ibapi)
 
